@@ -2,7 +2,6 @@ package dao
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 type UserDAO struct {

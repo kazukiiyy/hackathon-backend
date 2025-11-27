@@ -30,4 +30,6 @@ func init() {
 
 	userDAO := dao.NewUserDAO(_db)
 
+	_ = userDAO
+
 }
