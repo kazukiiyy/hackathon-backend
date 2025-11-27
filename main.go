@@ -11,7 +11,7 @@ import (
 	"uttc-hackathon-backend/dao"
 )
 
-func init() {
+func main() {
 	mysqlUser := os.Getenv("MYSQL_USER")
 	mysqlUserPwd := os.Getenv("MYSQL_USER_PWD")
 	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
