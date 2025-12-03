@@ -3,15 +3,17 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
+	"uttc-hackathon-backend/dao"
+	handler "uttc-hackathon-backend/handlers"
 
 	_ "github.com/go-sql-driver/mysql"
 
 	"log"
 	"os"
-	"uttc-hackathon-backend/dao"
 )
 
-func init() {
+func main() {
 	mysqlUser := os.Getenv("MYSQL_USER")
 	mysqlUserPwd := os.Getenv("MYSQL_USER_PWD")
 	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
@@ -28,8 +30,13 @@ func init() {
 	}
 	log.Println("Connected to mysql")
 
-	userDAO := dao.NewUserDAO(_db)
+	itemDAO := dao.NewItemDAO(_db)
+	itemHandler := handler.ItemHandler(itemDAO)
 
-	_ = userDAO
+	http.HandleFunc("/items", itemHandler.CreateItem)
+
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
+	}
 
 }
