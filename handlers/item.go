@@ -3,17 +3,18 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
-	"time"
-	"uttc-hackathon-backend/dao"
+	"uttc-hackathon-backend/usecase/post_item"
 )
 
 type ItemHandler struct {
-	dao *dao.UserDAO
+	usecase *post_item.ItemUsecase
+}
+
+func NewItemHandler(u *post_item.ItemUsecase) *ItemHandler {
+	return &ItemHandler{
+		u,
+	}
 }
 
 func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
@@ -27,57 +28,25 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	title := r.PostForm.Get("title")
 	explanation := r.PostForm.Get("explanation")
 	priceStr := r.PostForm.Get("price")
-
-	price, err := strconv.Atoi(priceStr)
-	if err != nil {
-		http.Error(w, "Invalid price", http.StatusBadRequest)
-		return
-	}
-
-	var imagePath string
-
 	file, fileHeader, err := r.FormFile("image")
-	if err == nil {
-		defer file.Close()
 
-		uploadDir := "./uploads"
-		if err := os.MkdirALL(uploadDir, os.MadePerm); err != nil {
-			http.Error(w, "Could not create directory", http.StatusInternalServerError)
-			return
-		}
-
-		filename := fmt.Sprintf("%d_%s", time.Now().Unix(), fileHeader.Filename)
-		filepath := filepath.Join(uploadDir, filename)
-
-		dst, err := os.Create(filepath)
-		if err != nil {
-			http.Error(w, "Could not savd file", http.StatusInternalServerError)
-			return
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, file); err != nil {
-			http.Error(w, "Could not save file", http.StatusInternalServerError)
-			return
-		}
-		imagePath = filepath
-		fmt.Printf("画像が保存されました : %s\n", imagePath)
-	} else if err != http.ErrMissingFile {
+	if err != nil && err != http.ErrMissingFile {
+		// ファイル取得自体の内部エラー
 		http.Error(w, "Error retrieving file", http.StatusInternalServerError)
 		return
 	}
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
 
-	err = h.dao.InsertItem(title, price, explanation, imagePath)
-	if err != nil {
-		fmt.Printf("DB Error: %v\n", err)
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
+	response, imagePath, err := h.usecase.CreateItem(title, priceStr, explanation, file, fileHeader)
 
-	}
 	fmt.Printf("出品データ保存完了: %s\n", title)
 
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{
+	response = map[string]string{
 		"message":   "Item Created successfully",
 		"image_url": imagePath,
 	}
