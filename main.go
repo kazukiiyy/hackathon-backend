@@ -15,24 +15,33 @@ import (
 )
 
 func main() {
+
 	mysqlUser := os.Getenv("MYSQL_USER")
 	mysqlUserPwd := os.Getenv("MYSQL_USER_PWD")
 	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
-	mysqlHost := os.Getenv("MYSQL_HOST")
+	instanceConnectionName := os.Getenv("INSTANCE_CONNECTION_NAME")
 
-	_db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase))
+	dsn := fmt.Sprintf(
+		"%s:%s@unix(/cloudsql/%s)/%s?parseTime=true",
+		mysqlUser,
+		mysqlUserPwd,
+		instanceConnectionName,
+		mysqlDatabase,
+	)
+
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Fatalf("fail:sql.Open,%v/n", err)
+		log.Fatalf("sql.Open error: %v", err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("db.Ping error: %v", err)
 	}
 
-	defer _db.Close()
+	log.Println("Connected to Cloud SQL!")
 
-	if err := _db.Ping(); err != nil {
-		log.Fatalf("fail:_db.Ping,%v/n", err)
-	}
-	log.Println("Connected to mysql")
-
-	itemDAO := dao.NewItemDAO(_db)
+	itemDAO := dao.NewItemDAO(db)
 	itemUsecase := post_item.NewItemUsecase(itemDAO)
 	itemHandler := handler.NewItemHandler(itemUsecase)
 
