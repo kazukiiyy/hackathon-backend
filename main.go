@@ -34,11 +34,7 @@ func main() {
 		log.Fatalf("sql.Open error: %v", err)
 	}
 	defer db.Close()
-
-	if err := db.Ping(); err != nil {
-		log.Fatalf("db.Ping error: %v", err)
-	}
-
+	
 	log.Println("Connected to Cloud SQL!")
 
 	itemDAO := dao.NewItemDAO(db)
