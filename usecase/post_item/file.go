@@ -23,7 +23,7 @@ func saveUploadedFile(file io.Reader, fileHeader *multipart.FileHeader) (string,
 	defer file.(multipart.File).Close() // multipart.File は io.Closerでもあるため、型アサーションが必要な場合がある
 
 	uploadDir := "./uploads"
-	if err := os.MkdirALL(uploadDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("could not create directory: %w", err)
 	}
 
