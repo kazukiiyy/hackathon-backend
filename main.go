@@ -34,7 +34,7 @@ func main() {
 		log.Fatalf("sql.Open error: %v", err)
 	}
 	defer db.Close()
-	
+
 	log.Println("Connected to Cloud SQL!")
 
 	itemDAO := dao.NewItemDAO(db)
