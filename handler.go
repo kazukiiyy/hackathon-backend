@@ -9,6 +9,12 @@ func handleCors(next http.Handler, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "...")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if r.Method == http.MethodOptions {
+		// 実際の処理はせずに、CORSヘッダーを返して終了
+		w.WriteHeader(http.StatusNoContent) // 204 No Content
+		return                              // 処理をここで終了させる
+	}
 	next.ServeHTTP(w, r)
 }
 func corsMiddleware(next http.Handler) http.Handler {
