@@ -42,6 +42,8 @@ func main() {
 	itemHandler := handler.NewItemHandler(itemUsecase)
 
 	http.HandleFunc("/items", itemHandler.CreateItem)
+	standardRouter := http.DefaultServeMux
+	finalHandler := corsMiddleware(standardRouter)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -50,7 +52,7 @@ func main() {
 
 	log.Printf("Server listening on port %s", port)
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
 		log.Fatal(err)
 	}
 
