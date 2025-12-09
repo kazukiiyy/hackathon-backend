@@ -6,7 +6,7 @@ import (
 
 func handleCors(next http.Handler, w http.ResponseWriter, r *http.Request) {
 	// 1. CORSヘッダーの設定
-	w.Header().Set("Access-Control-Allow-Origin", "...")
+	w.Header().Set("Access-Control-Allow-Origin", "https://uttc-hackathon-frontend-ix9mgv4j6-kazukis-projects-f47db0d9.vercel.app")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
