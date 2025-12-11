@@ -29,6 +29,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	explanation := r.PostForm.Get("explanation")
 	priceStr := r.PostForm.Get("price")
 	file, fileHeader, err := r.FormFile("image")
+	uid := r.PostForm.Get("sellerUid")
 
 	if err != nil && err != http.ErrMissingFile {
 		// ファイル取得自体の内部エラー
@@ -41,7 +42,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response, imagePath, err := h.usecase.CreateItem(title, priceStr, explanation, file, fileHeader)
+	response, imagePath, err := h.usecase.CreateItem(title, priceStr, explanation, file, fileHeader, uid)
 
 	fmt.Printf("出品データ保存完了: %s\n", title)
 
