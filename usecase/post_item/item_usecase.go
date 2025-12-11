@@ -15,7 +15,7 @@ func NewItemUsecase(dao *dao.ItemDAO) *ItemUsecase {
 }
 
 // CreateItemメソッド（ロジックを外部関数に委譲）
-func (uc *ItemUsecase) CreateItem(title string, explanation string, priceStr string, file multipart.File, fileHeader *multipart.FileHeader) (map[string]string, string, error) {
+func (uc *ItemUsecase) CreateItem(title string, explanation string, priceStr string, file multipart.File, fileHeader *multipart.FileHeader, uid string) (map[string]string, string, error) {
 
 	// 1. 価格の検証と変換を price.go に委譲
 	price := priceToInt(priceStr)
@@ -27,7 +27,7 @@ func (uc *ItemUsecase) CreateItem(title string, explanation string, priceStr str
 	}
 
 	// 3. DAOの呼び出し（永続化）
-	if err := uc.dao.InsertItem(title, price, explanation, imagePath); err != nil {
+	if err := uc.dao.InsertItem(title, price, explanation, imagePath, uid); err != nil {
 		return nil, "", fmt.Errorf("database error: %w", err)
 	}
 

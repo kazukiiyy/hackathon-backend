@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"uttc-hackathon-backend/dao"
-	handler "uttc-hackathon-backend/handlers"
+	"uttc-hackathon-backend/handlers"
 	"uttc-hackathon-backend/usecase/post_item"
 
 	_ "github.com/go-sql-driver/mysql"
