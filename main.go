@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"uttc-hackathon-backend/dao"
-	"uttc-hackathon-backend/handlers"
-	"uttc-hackathon-backend/usecase/post_item"
+	postItemsDao "uttc-hackathon-backend/dao/postItems"
+	postItemsHdr "uttc-hackathon-backend/handlers/postItems"
+	postItemsUc "uttc-hackathon-backend/usecase/postItems"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -37,9 +37,9 @@ func main() {
 
 	log.Println("Connected to Cloud SQL!")
 
-	itemDAO := dao.NewItemDAO(db)
-	itemUsecase := post_item.NewItemUsecase(itemDAO)
-	itemHandler := handler.NewItemHandler(itemUsecase)
+	itemDAO := postItemsDao.NewItemDAO(db)
+	itemUsecase := postItemsUc.NewItemUsecase(itemDAO)
+	itemHandler := postItemsHdr.NewItemHandler(itemUsecase)
 
 	http.HandleFunc("/items", itemHandler.CreateItem)
 	standardRouter := http.DefaultServeMux

@@ -1,12 +1,9 @@
-package dao
+package postItems
 
 import (
 	"database/sql"
 )
 
-type UserDAO struct {
-	db *sql.DB
-}
 
 type ItemDAO struct {
 	db *sql.DB

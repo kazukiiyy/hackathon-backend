@@ -1,20 +1,18 @@
-package handler
+package postItems
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"uttc-hackathon-backend/usecase/post_item"
+	"uttc-hackathon-backend/usecase/postItems"
 )
 
 type ItemHandler struct {
-	usecase *post_item.ItemUsecase
+	postItemsUc *postItems.ItemUsecase
 }
 
-func NewItemHandler(u *post_item.ItemUsecase) *ItemHandler {
-	return &ItemHandler{
-		u,
-	}
+func NewItemHandler(u *postItems.ItemUsecase) *ItemHandler {
+	return &ItemHandler{postItemsUc: u}
 }
 
 func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +40,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response, imagePath, err := h.usecase.CreateItem(title, priceStr, explanation, file, fileHeader, uid)
+	response, imagePath, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid)
 
 	fmt.Printf("出品データ保存完了: %s\n", title)
 
