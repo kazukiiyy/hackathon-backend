@@ -6,7 +6,15 @@ import (
 
 func handleCors(next http.Handler, w http.ResponseWriter, r *http.Request) {
 	// 1. CORSヘッダーの設定
-	w.Header().Set("Access-Control-Allow-Origin", "https://uttc-hackathon-frontend-ix9mgv4j6-kazukis-projects-f47db0d9.vercel.app")
+	origin := r.Header.Get("Origin")
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000": true,
+		"https://uttc-hackathon-frontend-ix9mgv4j6-kazukis-projects-f47db0d9.vercel.app": true,
+	}
+
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 

@@ -13,8 +13,8 @@ func NewItemUsecase(dao *getItemDao.ItemDAO) *ItemUsecase {
 	return &ItemUsecase{getItemDao: dao}
 }
 
-func (u *ItemUsecase) GetItemsByCategory(category string) ([]*getItemDao.Item, error) {
-	items, err := u.getItemDao.GetItemsByCategory(category)
+func (u *ItemUsecase) GetItemsByCategory(category string, page, limit int) ([]*getItemDao.Item, error) {
+	items, err := u.getItemDao.GetItemsByCategory(category, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get items: %w", err)
 	}

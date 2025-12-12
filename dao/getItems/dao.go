@@ -25,9 +25,10 @@ func NewItemDAO(db *sql.DB) *ItemDAO {
 	return &ItemDAO{db: db}
 }
 
-func (d *ItemDAO) GetItemsByCategory(category string) ([]*Item, error) {
-	query := "SELECT id, title, price, explanation, image_url, uid, ifPurchased, category, created_at FROM items WHERE category = ?"
-	rows, err := d.db.Query(query, category)
+func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item, error) {
+	offset := (page - 1) * limit
+	query := "SELECT id, title, price, explanation, image_url, uid, ifPurchased, category, created_at FROM items WHERE category = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	rows, err := d.db.Query(query, category, limit, offset)
 	if err != nil {
 		return nil, err
 	}
