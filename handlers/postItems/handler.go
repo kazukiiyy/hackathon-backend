@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"uttc-hackathon-backend/usecase/postItems"
 )
 
@@ -28,6 +29,8 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	priceStr := r.PostForm.Get("price")
 	file, fileHeader, err := r.FormFile("image")
 	uid := r.PostForm.Get("sellerUid")
+	ifPurchasedStr := r.PostForm.Get("ifpurchased")
+	category := r.PostForm.Get("category")
 
 	if err != nil && err != http.ErrMissingFile {
 		// ファイル取得自体の内部エラー
@@ -40,7 +43,14 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response, imagePath, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid)
+	ifPurchased, err := strconv.ParseBool(ifPurchasedStr)
+
+	if err != nil {
+		fmt.Println("Error parsing ifPurchased:", err)
+		return
+	}
+
+	response, imagePath, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid, ifPurchased, category)
 
 	fmt.Printf("出品データ保存完了: %s\n", title)
 

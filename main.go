@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	getItemDao "uttc-hackathon-backend/dao/getItems"
 	postItemsDao "uttc-hackathon-backend/dao/postItems"
+	getItemHdr "uttc-hackathon-backend/handlers/getItems"
 	postItemsHdr "uttc-hackathon-backend/handlers/postItems"
+	getItemUc "uttc-hackathon-backend/usecase/getItems"
 	postItemsUc "uttc-hackathon-backend/usecase/postItems"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -41,7 +44,12 @@ func main() {
 	itemUsecase := postItemsUc.NewItemUsecase(itemDAO)
 	itemHandler := postItemsHdr.NewItemHandler(itemUsecase)
 
-	http.HandleFunc("/items", itemHandler.CreateItem)
+	getItemDAO := getItemDao.NewItemDAO(db)
+	getItemUsecase := getItemUc.NewItemUsecase(getItemDAO)
+	getItemHandler := getItemHdr.NewItemHandler(getItemUsecase)
+
+	http.HandleFunc("/postItems", itemHandler.CreateItem)
+	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
 
