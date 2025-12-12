@@ -43,12 +43,17 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	ifPurchased, err := strconv.ParseBool(ifPurchasedStr)
-
-	if err != nil {
-		fmt.Println("Error parsing ifPurchased:", err)
-		writeJSONError(w, "Invalid ifpurchased value", http.StatusBadRequest)
-		return
+	var ifPurchased bool
+	if ifPurchasedStr == "" {
+		ifPurchased = false
+	} else {
+		var err error
+		ifPurchased, err = strconv.ParseBool(ifPurchasedStr)
+		if err != nil {
+			fmt.Println("Error parsing ifPurchased:", err)
+			writeJSONError(w, "Invalid ifpurchased value", http.StatusBadRequest)
+			return
+		}
 	}
 
 	response, imagePath, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid, ifPurchased, category)
