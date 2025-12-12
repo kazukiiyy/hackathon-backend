@@ -20,3 +20,11 @@ func (u *ItemUsecase) GetItemsByCategory(category string, page, limit int) ([]*g
 	}
 	return items, nil
 }
+
+func (u *ItemUsecase) GetItemByID(id int) (*getItemDao.Item, error) {
+	item, err := u.getItemDao.GetItemByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get item: %w", err)
+	}
+	return item, nil
+}

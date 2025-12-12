@@ -50,3 +50,16 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 
 	return items, nil
 }
+
+func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
+	query := "SELECT id, title, price, explanation, image_url, uid, ifPurchased, category, created_at FROM items WHERE id = ?"
+	row := d.db.QueryRow(query, id)
+
+	var item Item
+	err := row.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.ImageURL, &item.UID, &item.IfPurchased, &item.Category, &item.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
