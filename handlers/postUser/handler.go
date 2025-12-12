@@ -25,29 +25,29 @@ type RegisterRequest struct {
 
 func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		writeJSONError(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	if req.Uid == "" {
-		http.Error(w, "uid is required", http.StatusBadRequest)
+		writeJSONError(w, "uid is required", http.StatusBadRequest)
 		return
 	}
 
 	if req.Nickname == "" {
-		http.Error(w, "nickname is required", http.StatusBadRequest)
+		writeJSONError(w, "nickname is required", http.StatusBadRequest)
 		return
 	}
 
 	response, err := h.postUserUc.RegisterUser(req.Uid, req.Nickname, req.Sex, req.Birthyear, req.Birthdate)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -55,6 +55,12 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "JSON encode error", http.StatusInternalServerError)
+		writeJSONError(w, "JSON encode error", http.StatusInternalServerError)
 	}
+}
+
+func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"message": message})
 }

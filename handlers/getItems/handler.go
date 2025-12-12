@@ -17,13 +17,13 @@ func NewItemHandler(u *getItems.ItemUsecase) *ItemHandler {
 
 func (h *ItemHandler) GetItems(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	category := r.URL.Query().Get("category")
 	if category == "" {
-		http.Error(w, "category is required", http.StatusBadRequest)
+		writeJSONError(w, "category is required", http.StatusBadRequest)
 		return
 	}
 
@@ -44,12 +44,18 @@ func (h *ItemHandler) GetItems(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.getItemUc.GetItemsByCategory(category, page, limit)
 	if err != nil {
-		http.Error(w, "Items not found", http.StatusNotFound)
+		writeJSONError(w, "Items not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {
-		http.Error(w, "JSON encode error", http.StatusInternalServerError)
+		writeJSONError(w, "JSON encode error", http.StatusInternalServerError)
 	}
+}
+
+func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"message": message})
 }
