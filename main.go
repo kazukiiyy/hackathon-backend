@@ -57,6 +57,7 @@ func main() {
 
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
+	http.HandleFunc("/getItems/", getItemHandler.GetItemByID)
 	http.HandleFunc("/register", userHandler.RegisterUser)
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
