@@ -1,4 +1,4 @@
-package post_item
+package postItems
 
 import (
 	"fmt"
