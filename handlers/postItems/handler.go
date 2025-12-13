@@ -22,7 +22,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	r.ParseForm()
+	r.ParseMultipartForm(10 << 20) // 10MB max
 
 	title := r.PostForm.Get("title")
 	explanation := r.PostForm.Get("explanation")
@@ -56,7 +56,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	response, imageURLs, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid, ifPurchased, category)
+	response, imageURLs, err := h.postItemsUc.CreateItem(title, explanation, priceStr, file, fileHeader, uid, ifPurchased, category)
 	if err != nil {
 		fmt.Println("Error creating item:", err)
 		writeJSONError(w, "Failed to create item", http.StatusInternalServerError)
