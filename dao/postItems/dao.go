@@ -21,8 +21,8 @@ func (d *ItemDAO) InsertItem(title string, price int, explanation string, imageU
 	defer tx.Rollback()
 
 	// itemsテーブルに挿入
-	query := "INSERT INTO items (title, price, explanation, uid, ifPurchased, category, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)"
-	result, err := tx.Exec(query, title, price, explanation, uid, ifPurchased, category, "")
+	query := "INSERT INTO items (title, price, explanation, uid, ifPurchased, category) VALUES (?, ?, ?, ?, ?, ?)"
+	result, err := tx.Exec(query, title, price, explanation, uid, ifPurchased, category)
 	if err != nil {
 		return err
 	}
