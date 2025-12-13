@@ -22,7 +22,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	r.ParseForm()
+	r.ParseMultipartForm(10 << 20) // 10MB max
 
 	title := r.PostForm.Get("title")
 	explanation := r.PostForm.Get("explanation")
