@@ -22,8 +22,26 @@ func (h *ItemHandler) GetItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	category := r.URL.Query().Get("category")
+	uid := r.URL.Query().Get("uid")
+
+	// uidが指定されている場合はuidで検索
+	if uid != "" {
+		items, err := h.getItemUc.GetItemsByUid(uid)
+		if err != nil {
+			writeJSONError(w, "Items not found", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(items); err != nil {
+			writeJSONError(w, "JSON encode error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// categoryが指定されている場合はcategoryで検索
 	if category == "" {
-		writeJSONError(w, "category is required", http.StatusBadRequest)
+		writeJSONError(w, "category or uid is required", http.StatusBadRequest)
 		return
 	}
 

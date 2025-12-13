@@ -28,3 +28,11 @@ func (u *ItemUsecase) GetItemByID(id int) (*getItemDao.Item, error) {
 	}
 	return item, nil
 }
+
+func (u *ItemUsecase) GetItemsByUid(uid string) ([]*getItemDao.Item, error) {
+	items, err := u.getItemDao.GetItemsByUid(uid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get items by uid: %w", err)
+	}
+	return items, nil
+}
