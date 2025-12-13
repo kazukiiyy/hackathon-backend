@@ -7,12 +7,15 @@ import (
 	getItemDao "uttc-hackathon-backend/dao/getItems"
 	postItemsDao "uttc-hackathon-backend/dao/postItems"
 	postUserDao "uttc-hackathon-backend/dao/postUser"
+	purchaseItemDao "uttc-hackathon-backend/dao/purchaseItem"
 	getItemHdr "uttc-hackathon-backend/handlers/getItems"
 	postItemsHdr "uttc-hackathon-backend/handlers/postItems"
 	postUserHdr "uttc-hackathon-backend/handlers/postUser"
+	purchaseItemHdr "uttc-hackathon-backend/handlers/purchaseItem"
 	getItemUc "uttc-hackathon-backend/usecase/getItems"
 	postItemsUc "uttc-hackathon-backend/usecase/postItems"
 	postUserUc "uttc-hackathon-backend/usecase/postUser"
+	purchaseItemUc "uttc-hackathon-backend/usecase/purchaseItem"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -55,10 +58,15 @@ func main() {
 	userUsecase := postUserUc.NewUserUsecase(userDAO)
 	userHandler := postUserHdr.NewUserHandler(userUsecase)
 
+	purchaseDAO := purchaseItemDao.NewPurchaseDAO(db)
+	purchaseUsecase := purchaseItemUc.NewPurchaseUsecase(purchaseDAO)
+	purchaseHandler := purchaseItemHdr.NewPurchaseHandler(purchaseUsecase)
+
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	http.HandleFunc("/getItems/", getItemHandler.GetItemByID)
 	http.HandleFunc("/register", userHandler.RegisterUser)
+	http.HandleFunc("/items/", purchaseHandler.PurchaseItem)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
