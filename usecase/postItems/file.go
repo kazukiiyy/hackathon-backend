@@ -44,5 +44,6 @@ func saveUploadedFile(file io.Reader, fileHeader *multipart.FileHeader) (string,
 		return "", fmt.Errorf("could not save file content: %w", err)
 	}
 
-	return filePath, nil
+	// "./uploads/filename" -> "uploads/filename" に変換
+	return "uploads/" + filename, nil
 }
