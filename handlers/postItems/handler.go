@@ -56,7 +56,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	response, imagePath, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid, ifPurchased, category)
+	response, imageURLs, err := h.postItemsUc.CreateItem(title, priceStr, explanation, file, fileHeader, uid, ifPurchased, category)
 	if err != nil {
 		fmt.Println("Error creating item:", err)
 		writeJSONError(w, "Failed to create item", http.StatusInternalServerError)
@@ -66,9 +66,9 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("出品データ保存完了: %s\n", title)
 
 	w.Header().Set("Content-Type", "application/json")
-	response = map[string]string{
-		"message":   "Item Created successfully",
-		"image_url": imagePath,
+	response = map[string]interface{}{
+		"message":    "Item Created successfully",
+		"image_urls": imageURLs,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		writeJSONError(w, "JSON encode error", http.StatusInternalServerError)

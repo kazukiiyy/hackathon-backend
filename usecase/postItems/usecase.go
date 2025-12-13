@@ -15,7 +15,7 @@ func NewItemUsecase(dao *postItemsDao.ItemDAO) *ItemUsecase {
 }
 
 // CreateItemメソッド（ロジックを外部関数に委譲）
-func (h *ItemUsecase) CreateItem(title string, explanation string, priceStr string, file multipart.File, fileHeader *multipart.FileHeader, uid string, ifPurchased bool, category string) (map[string]string, string, error) {
+func (h *ItemUsecase) CreateItem(title string, explanation string, priceStr string, file multipart.File, fileHeader *multipart.FileHeader, uid string, ifPurchased bool, category string) (map[string]interface{}, []string, error) {
 
 	// 1. 価格の検証と変換を price.go に委譲
 	price := priceToInt(priceStr)
@@ -23,19 +23,25 @@ func (h *ItemUsecase) CreateItem(title string, explanation string, priceStr stri
 	// 2. ファイルI/O処理を file.go に委譲
 	imagePath, err := saveUploadedFile(file, fileHeader)
 	if err != nil {
-		return nil, "", fmt.Errorf("file processing error: %w", err)
+		return nil, nil, fmt.Errorf("file processing error: %w", err)
+	}
+
+	// 画像URLを配列として保持（現在は1枚のみ対応）
+	var imageURLs []string
+	if imagePath != "" {
+		imageURLs = append(imageURLs, imagePath)
 	}
 
 	// 3. DAOの呼び出し（永続化）
-	if err := h.postItemsDao.InsertItem(title, price, explanation, imagePath, uid, ifPurchased, category); err != nil {
-		return nil, "", fmt.Errorf("database error: %w", err)
+	if err := h.postItemsDao.InsertItem(title, price, explanation, imageURLs, uid, ifPurchased, category); err != nil {
+		return nil, nil, fmt.Errorf("database error: %w", err)
 	}
 
 	// 4. 成功時のレスポンス
-	response := map[string]string{
-		"message":   "Item Created successfully",
-		"image_url": imagePath,
+	response := map[string]interface{}{
+		"message":    "Item Created successfully",
+		"image_urls": imageURLs,
 	}
 
-	return response, imagePath, nil
+	return response, imageURLs, nil
 }
