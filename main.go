@@ -59,6 +59,7 @@ func main() {
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	http.HandleFunc("/getItems/", getItemHandler.GetItemByID)
 	http.HandleFunc("/register", userHandler.RegisterUser)
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
 
