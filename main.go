@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"net/http"
 	getItemDao "uttc-hackathon-backend/dao/getItems"
+	messagesDao "uttc-hackathon-backend/dao/messages"
 	postItemsDao "uttc-hackathon-backend/dao/postItems"
 	postUserDao "uttc-hackathon-backend/dao/postUser"
 	purchaseItemDao "uttc-hackathon-backend/dao/purchaseItem"
 	getItemHdr "uttc-hackathon-backend/handlers/getItems"
+	messagesHdr "uttc-hackathon-backend/handlers/messages"
 	postItemsHdr "uttc-hackathon-backend/handlers/postItems"
 	postUserHdr "uttc-hackathon-backend/handlers/postUser"
 	purchaseItemHdr "uttc-hackathon-backend/handlers/purchaseItem"
 	getItemUc "uttc-hackathon-backend/usecase/getItems"
+	messagesUc "uttc-hackathon-backend/usecase/messages"
 	postItemsUc "uttc-hackathon-backend/usecase/postItems"
 	postUserUc "uttc-hackathon-backend/usecase/postUser"
 	purchaseItemUc "uttc-hackathon-backend/usecase/purchaseItem"
@@ -62,11 +65,18 @@ func main() {
 	purchaseUsecase := purchaseItemUc.NewPurchaseUsecase(purchaseDAO)
 	purchaseHandler := purchaseItemHdr.NewPurchaseHandler(purchaseUsecase)
 
+	messageDAO := messagesDao.NewMessageDAO(db)
+	messageUsecase := messagesUc.NewMessageUsecase(messageDAO)
+	messageHandler := messagesHdr.NewMessageHandler(messageUsecase)
+
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	http.HandleFunc("/getItems/", getItemHandler.GetItemByID)
 	http.HandleFunc("/register", userHandler.RegisterUser)
 	http.HandleFunc("/items/", purchaseHandler.PurchaseItem)
+	http.HandleFunc("/messages", messageHandler.GetMessages)
+	http.HandleFunc("/messages/send", messageHandler.SendMessage)
+	http.HandleFunc("/messages/read", messageHandler.MarkAsRead)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
