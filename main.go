@@ -77,6 +77,7 @@ func main() {
 	http.HandleFunc("/messages", messageHandler.GetMessages)
 	http.HandleFunc("/messages/send", messageHandler.SendMessage)
 	http.HandleFunc("/messages/read", messageHandler.MarkAsRead)
+	http.HandleFunc("/messages/conversations", messageHandler.GetConversations)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)

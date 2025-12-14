@@ -79,3 +79,60 @@ func (d *MessageDAO) MarkAsRead(myUID, partnerUID string) error {
 	_, err := d.db.Exec(query, partnerUID, myUID)
 	return err
 }
+
+// Conversation はやり取りしている相手との会話情報
+type Conversation struct {
+	PartnerUID     string    `json:"partner_uid"`
+	LastMessage    string    `json:"last_message"`
+	LastMessageAt  time.Time `json:"last_message_at"`
+	UnreadCount    int       `json:"unread_count"`
+}
+
+// やり取りしている相手一覧を取得
+func (d *MessageDAO) GetConversations(myUID string) ([]*Conversation, error) {
+	query := `
+		SELECT
+			partner_uid,
+			last_message,
+			last_message_at,
+			unread_count
+		FROM (
+			SELECT
+				CASE
+					WHEN sender_uid = ? THEN receiver_uid
+					ELSE sender_uid
+				END as partner_uid,
+				content as last_message,
+				created_at as last_message_at,
+				(SELECT COUNT(*) FROM messages m2
+				 WHERE m2.sender_uid = CASE WHEN m1.sender_uid = ? THEN m1.receiver_uid ELSE m1.sender_uid END
+				 AND m2.receiver_uid = ?
+				 AND m2.is_read = false) as unread_count,
+				ROW_NUMBER() OVER (
+					PARTITION BY CASE WHEN sender_uid = ? THEN receiver_uid ELSE sender_uid END
+					ORDER BY created_at DESC
+				) as rn
+			FROM messages m1
+			WHERE sender_uid = ? OR receiver_uid = ?
+		) sub
+		WHERE rn = 1
+		ORDER BY last_message_at DESC
+	`
+	rows, err := d.db.Query(query, myUID, myUID, myUID, myUID, myUID, myUID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var conversations []*Conversation
+	for rows.Next() {
+		var conv Conversation
+		err := rows.Scan(&conv.PartnerUID, &conv.LastMessage, &conv.LastMessageAt, &conv.UnreadCount)
+		if err != nil {
+			return nil, err
+		}
+		conversations = append(conversations, &conv)
+	}
+
+	return conversations, rows.Err()
+}

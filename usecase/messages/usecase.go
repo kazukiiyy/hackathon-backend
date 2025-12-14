@@ -23,3 +23,7 @@ func (u *MessageUsecase) SendMessage(senderUID, receiverUID, content string) (*d
 func (u *MessageUsecase) MarkAsRead(myUID, partnerUID string) error {
 	return u.messageDAO.MarkAsRead(myUID, partnerUID)
 }
+
+func (u *MessageUsecase) GetConversations(myUID string) ([]*dao.Conversation, error) {
+	return u.messageDAO.GetConversations(myUID)
+}
