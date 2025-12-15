@@ -71,9 +71,11 @@ func main() {
 
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
+	http.HandleFunc("/getItems/latest", getItemHandler.GetLatestItems)
 	http.HandleFunc("/getItems/", getItemHandler.GetItemByID)
 	http.HandleFunc("/register", userHandler.RegisterUser)
 	http.HandleFunc("/items/", purchaseHandler.PurchaseItem)
+	http.HandleFunc("/purchases", purchaseHandler.GetPurchasedItems)
 	http.HandleFunc("/messages", messageHandler.GetMessages)
 	http.HandleFunc("/messages/send", messageHandler.SendMessage)
 	http.HandleFunc("/messages/read", messageHandler.MarkAsRead)

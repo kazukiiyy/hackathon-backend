@@ -99,6 +99,31 @@ func (h *ItemHandler) GetItemByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *ItemHandler) GetLatestItems(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 50 {
+			limit = parsed
+		}
+	}
+
+	items, err := h.getItemUc.GetLatestItems(limit)
+	if err != nil {
+		writeJSONError(w, "Failed to get latest items", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		writeJSONError(w, "JSON encode error", http.StatusInternalServerError)
+	}
+}
+
 func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

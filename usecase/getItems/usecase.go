@@ -36,3 +36,11 @@ func (u *ItemUsecase) GetItemsByUid(uid string) ([]*getItemDao.Item, error) {
 	}
 	return items, nil
 }
+
+func (u *ItemUsecase) GetLatestItems(limit int) ([]*getItemDao.Item, error) {
+	items, err := u.getItemDao.GetLatestItems(limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest items: %w", err)
+	}
+	return items, nil
+}
