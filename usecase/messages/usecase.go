@@ -5,10 +5,10 @@ import (
 )
 
 type MessageUsecase struct {
-	messageDAO *dao.MessageDAO
+	messageDAO dao.MessageDAOInterface
 }
 
-func NewMessageUsecase(messageDAO *dao.MessageDAO) *MessageUsecase {
+func NewMessageUsecase(messageDAO dao.MessageDAOInterface) *MessageUsecase {
 	return &MessageUsecase{messageDAO: messageDAO}
 }
 

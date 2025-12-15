@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+// PurchaseDAOInterface はモック化のためのインターフェース
+type PurchaseDAOInterface interface {
+	UpdatePurchaseStatus(itemID int, buyerUID string) error
+	GetPurchasedItems(buyerUID string) ([]*PurchasedItem, error)
+}
+
 type PurchaseDAO struct {
 	db *sql.DB
 }

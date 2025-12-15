@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	getItemDao "uttc-hackathon-backend/dao/getItems"
+	likesDao "uttc-hackathon-backend/dao/likes"
 	messagesDao "uttc-hackathon-backend/dao/messages"
 	postItemsDao "uttc-hackathon-backend/dao/postItems"
 	postUserDao "uttc-hackathon-backend/dao/postUser"
 	purchaseItemDao "uttc-hackathon-backend/dao/purchaseItem"
 	getItemHdr "uttc-hackathon-backend/handlers/getItems"
+	likesHdr "uttc-hackathon-backend/handlers/likes"
 	messagesHdr "uttc-hackathon-backend/handlers/messages"
 	postItemsHdr "uttc-hackathon-backend/handlers/postItems"
 	postUserHdr "uttc-hackathon-backend/handlers/postUser"
 	purchaseItemHdr "uttc-hackathon-backend/handlers/purchaseItem"
 	getItemUc "uttc-hackathon-backend/usecase/getItems"
+	likesUc "uttc-hackathon-backend/usecase/likes"
 	messagesUc "uttc-hackathon-backend/usecase/messages"
 	postItemsUc "uttc-hackathon-backend/usecase/postItems"
 	postUserUc "uttc-hackathon-backend/usecase/postUser"
@@ -69,6 +72,10 @@ func main() {
 	messageUsecase := messagesUc.NewMessageUsecase(messageDAO)
 	messageHandler := messagesHdr.NewMessageHandler(messageUsecase)
 
+	likeDAO := likesDao.NewLikeDAO(db)
+	likeUsecase := likesUc.NewLikeUsecase(likeDAO)
+	likeHandler := likesHdr.NewLikeHandler(likeUsecase)
+
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	http.HandleFunc("/getItems/latest", getItemHandler.GetLatestItems)
@@ -80,6 +87,9 @@ func main() {
 	http.HandleFunc("/messages/send", messageHandler.SendMessage)
 	http.HandleFunc("/messages/read", messageHandler.MarkAsRead)
 	http.HandleFunc("/messages/conversations", messageHandler.GetConversations)
+	http.HandleFunc("/likes", likeHandler.HandleLike)
+	http.HandleFunc("/likes/status", likeHandler.GetLikeStatus)
+	http.HandleFunc("/likes/user", likeHandler.GetUserLikes)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
