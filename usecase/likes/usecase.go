@@ -6,10 +6,10 @@ import (
 )
 
 type LikeUsecase struct {
-	likeDao *likesDao.LikeDAO
+	likeDao likesDao.LikeDAOInterface
 }
 
-func NewLikeUsecase(dao *likesDao.LikeDAO) *LikeUsecase {
+func NewLikeUsecase(dao likesDao.LikeDAOInterface) *LikeUsecase {
 	return &LikeUsecase{likeDao: dao}
 }
 

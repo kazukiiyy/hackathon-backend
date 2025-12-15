@@ -14,6 +14,14 @@ type Message struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// MessageDAOInterface はモック化のためのインターフェース
+type MessageDAOInterface interface {
+	GetMessagesByPartner(myUID, partnerUID string) ([]*Message, error)
+	CreateMessage(senderUID, receiverUID, content string) (*Message, error)
+	MarkAsRead(myUID, partnerUID string) error
+	GetConversations(myUID string) ([]*Conversation, error)
+}
+
 type MessageDAO struct {
 	db *sql.DB
 }

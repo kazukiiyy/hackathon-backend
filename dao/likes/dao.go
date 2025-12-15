@@ -12,6 +12,15 @@ type Like struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// LikeDAOInterface はモック化のためのインターフェース
+type LikeDAOInterface interface {
+	AddLike(itemID int, uid string) error
+	RemoveLike(itemID int, uid string) error
+	IsLiked(itemID int, uid string) (bool, error)
+	GetLikeCount(itemID int) (int, error)
+	GetLikedItemsByUser(uid string) ([]int, error)
+}
+
 type LikeDAO struct {
 	db *sql.DB
 }

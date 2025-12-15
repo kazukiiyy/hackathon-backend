@@ -5,10 +5,10 @@ import (
 )
 
 type PurchaseUsecase struct {
-	purchaseDAO *dao.PurchaseDAO
+	purchaseDAO dao.PurchaseDAOInterface
 }
 
-func NewPurchaseUsecase(purchaseDAO *dao.PurchaseDAO) *PurchaseUsecase {
+func NewPurchaseUsecase(purchaseDAO dao.PurchaseDAOInterface) *PurchaseUsecase {
 	return &PurchaseUsecase{purchaseDAO: purchaseDAO}
 }
 
