@@ -99,6 +99,40 @@ func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
 	return &item, nil
 }
 
+// 新着商品を取得
+func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
+	query := "SELECT id, title, price, explanation, uid, ifPurchased, category, created_at FROM items ORDER BY created_at DESC LIMIT ?"
+	rows, err := d.db.Query(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []*Item
+	for rows.Next() {
+		var item Item
+		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.IfPurchased, &item.Category, &item.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, &item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for _, item := range items {
+		urls, err := d.getImageURLsForItem(item.ID)
+		if err != nil {
+			return nil, err
+		}
+		item.ImageURLs = urls
+	}
+
+	return items, nil
+}
+
 func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 	query := "SELECT id, title, price, explanation, uid, ifPurchased, category, created_at FROM items WHERE uid = ? ORDER BY created_at DESC"
 	rows, err := d.db.Query(query, uid)

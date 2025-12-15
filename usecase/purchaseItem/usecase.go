@@ -1,17 +1,21 @@
 package purchaseItem
 
-type PurchaseDAO interface {
-	UpdatePurchaseStatus(itemID int, buyerUID string) error
-}
+import (
+	dao "uttc-hackathon-backend/dao/purchaseItem"
+)
 
 type PurchaseUsecase struct {
-	dao PurchaseDAO
+	purchaseDAO *dao.PurchaseDAO
 }
 
-func NewPurchaseUsecase(dao PurchaseDAO) *PurchaseUsecase {
-	return &PurchaseUsecase{dao: dao}
+func NewPurchaseUsecase(purchaseDAO *dao.PurchaseDAO) *PurchaseUsecase {
+	return &PurchaseUsecase{purchaseDAO: purchaseDAO}
 }
 
 func (u *PurchaseUsecase) PurchaseItem(itemID int, buyerUID string) error {
-	return u.dao.UpdatePurchaseStatus(itemID, buyerUID)
+	return u.purchaseDAO.UpdatePurchaseStatus(itemID, buyerUID)
+}
+
+func (u *PurchaseUsecase) GetPurchasedItems(buyerUID string) ([]*dao.PurchasedItem, error) {
+	return u.purchaseDAO.GetPurchasedItems(buyerUID)
 }

@@ -6,17 +6,15 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	dao "uttc-hackathon-backend/dao/purchaseItem"
+	uc "uttc-hackathon-backend/usecase/purchaseItem"
 )
 
-type PurchaseUsecase interface {
-	PurchaseItem(itemID int, buyerUID string) error
-}
-
 type PurchaseHandler struct {
-	usecase PurchaseUsecase
+	usecase *uc.PurchaseUsecase
 }
 
-func NewPurchaseHandler(usecase PurchaseUsecase) *PurchaseHandler {
+func NewPurchaseHandler(usecase *uc.PurchaseUsecase) *PurchaseHandler {
 	return &PurchaseHandler{usecase: usecase}
 }
 
@@ -82,4 +80,37 @@ func (h *PurchaseHandler) PurchaseItem(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(PurchaseResponse{Message: "Purchase successful"})
+}
+
+// GET /purchases?buyer_uid=xxx
+func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Method not allowed"})
+		return
+	}
+
+	buyerUID := r.URL.Query().Get("buyer_uid")
+	if buyerUID == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "buyer_uid is required"})
+		return
+	}
+
+	items, err := h.usecase.GetPurchasedItems(buyerUID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to get purchased items"})
+		return
+	}
+
+	if items == nil {
+		items = []*dao.PurchasedItem{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
 }
