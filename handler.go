@@ -10,6 +10,7 @@ func handleCors(next http.Handler, w http.ResponseWriter, r *http.Request) {
 	allowedOrigins := map[string]bool{
 		"http://localhost:3000": true,
 		"https://uttc-hackathon-frontend-ix9mgv4j6-kazukis-projects-f47db0d9.vercel.app": true,
+		"https://uttc-hackathon-frontend-pink.vercel.app":                                true,
 	}
 
 	if allowedOrigins[origin] {
