@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -110,10 +111,20 @@ func main() {
 
 	standardRouter := http.DefaultServeMux
 	
-	// デバッグ用: すべてのリクエストをログに記録
+	// デバッグ用: すべてのリクエストとレスポンスをログに記録
 	loggingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Incoming request: method=%s, path=%s, origin=%s", r.Method, r.URL.Path, r.Header.Get("Origin"))
-		corsMiddleware(standardRouter).ServeHTTP(w, r)
+		
+		// レスポンスのステータスコードを記録するためのラッパー
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		corsMiddleware(standardRouter).ServeHTTP(lrw, r)
+		
+		// ステータスコードをログに記録（エラーの場合のみ詳細に記録）
+		if lrw.statusCode >= 400 {
+			log.Printf("Request failed: method=%s, path=%s, status=%d", r.Method, r.URL.Path, lrw.statusCode)
+		} else if lrw.statusCode >= 200 && lrw.statusCode < 300 {
+			log.Printf("Request succeeded: method=%s, path=%s, status=%d", r.Method, r.URL.Path, lrw.statusCode)
+		}
 	})
 	
 	finalHandler := loggingHandler
