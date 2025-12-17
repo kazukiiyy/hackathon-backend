@@ -95,18 +95,10 @@ func (d *ItemDAO) InsertItemWithChainID(title string, price int, explanation str
 	// priceを文字列に変換（データベースではVARCHARとして保存）
 	priceStr := fmt.Sprintf("%d", price)
 
-	// itemsテーブルに挿入（chain_item_idを含む）
-	// statusカラムが存在しない可能性があるため、まずstatusなしで試行
-	// もしstatusカラムが必要な場合は、データベースのデフォルト値を使用
-	query := "INSERT INTO items (title, price, explanation, uid, category, chain_item_id, seller_address, token_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-	result, err := tx.Exec(query, title, priceStr, explanation, uid, category, chainItemID, sellerAddress, tokenID)
+	// itemsテーブルに挿入（chain_item_idとstatusを含む）
+	query := "INSERT INTO items (title, price, explanation, uid, status, category, chain_item_id, seller_address, token_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	result, err := tx.Exec(query, title, priceStr, explanation, uid, status, category, chainItemID, sellerAddress, tokenID)
 	if err != nil {
-		// statusカラムが存在する場合は、statusを含めて再試行
-		queryWithStatus := "INSERT INTO items (title, price, explanation, uid, status, category, chain_item_id, seller_address, token_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		result, err = tx.Exec(queryWithStatus, title, priceStr, explanation, uid, status, category, chainItemID, sellerAddress, tokenID)
-	}
-	if err != nil {
-		// より詳細なエラーメッセージを返す
 		return fmt.Errorf("failed to insert item into items table (title=%s, chain_item_id=%d, uid=%s): %w", title, chainItemID, uid, err)
 	}
 
