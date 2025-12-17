@@ -85,6 +85,7 @@ func main() {
 
 	// HTTPルーティング
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
+	http.HandleFunc("/uploadImage", itemHandler.UploadImage)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	http.HandleFunc("/getItems/latest", getItemHandler.GetLatestItems)
 	http.HandleFunc("/getItems/", getItemHandler.GetItemByID)

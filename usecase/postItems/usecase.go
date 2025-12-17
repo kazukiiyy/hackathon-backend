@@ -17,8 +17,22 @@ func NewItemUsecase(dao *postItemsDao.ItemDAO) *ItemUsecase {
 // CreateItemメソッド（ロジックを外部関数に委譲）
 func (h *ItemUsecase) CreateItem(title string, explanation string, priceStr string, file multipart.File, fileHeader *multipart.FileHeader, uid string, status string, category string) (map[string]interface{}, []string, error) {
 
+	// バリデーション
+	if title == "" {
+		return nil, nil, fmt.Errorf("title is required")
+	}
+	if uid == "" {
+		return nil, nil, fmt.Errorf("uid is required")
+	}
+	if category == "" {
+		return nil, nil, fmt.Errorf("category is required")
+	}
+
 	// 1. 価格の検証と変換を price.go に委譲
-	price := priceToInt(priceStr)
+	price, err := priceToInt(priceStr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("price validation error: %w", err)
+	}
 
 	// 2. ファイルI/O処理を file.go に委譲
 	imagePath, err := saveUploadedFile(file, fileHeader)
@@ -44,4 +58,13 @@ func (h *ItemUsecase) CreateItem(title string, explanation string, priceStr stri
 	}
 
 	return response, imageURLs, nil
+}
+
+// UploadImage は画像のみをアップロードしてURLを返す
+func (h *ItemUsecase) UploadImage(file multipart.File, fileHeader *multipart.FileHeader) (string, error) {
+	imagePath, err := saveUploadedFile(file, fileHeader)
+	if err != nil {
+		return "", fmt.Errorf("file processing error: %w", err)
+	}
+	return imagePath, nil
 }

@@ -28,7 +28,7 @@ func (d *ItemDAO) InsertItem(title string, price int, explanation string, imageU
 	query := "INSERT INTO items (title, price, explanation, uid, status, category) VALUES (?, ?, ?, ?, ?, ?)"
 	result, err := tx.Exec(query, title, priceStr, explanation, uid, status, category)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert item into database: %w", err)
 	}
 
 	// 挿入したアイテムのIDを取得
@@ -44,7 +44,7 @@ func (d *ItemDAO) InsertItem(title string, price int, explanation string, imageU
 			if url != "" {
 				_, err := tx.Exec(imageQuery, itemID, url)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to insert image URL into database: %w", err)
 				}
 			}
 		}
