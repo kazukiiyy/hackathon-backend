@@ -18,6 +18,8 @@ import (
 	postItemsHdr "uttc-hackathon-backend/handlers/postItems"
 	postUserHdr "uttc-hackathon-backend/handlers/postUser"
 	purchaseItemHdr "uttc-hackathon-backend/handlers/purchaseItem"
+	blockchainHdr "uttc-hackathon-backend/handlers/blockchain"
+	blockchainUc "uttc-hackathon-backend/usecase/blockchain"
 	getItemUc "uttc-hackathon-backend/usecase/getItems"
 	likesUc "uttc-hackathon-backend/usecase/likes"
 	messagesUc "uttc-hackathon-backend/usecase/messages"
@@ -77,6 +79,10 @@ func main() {
 	likeUsecase := likesUc.NewLikeUsecase(likeDAO)
 	likeHandler := likesHdr.NewLikeHandler(likeUsecase)
 
+	// Blockchain handler
+	blockchainUsecase := blockchainUc.NewBlockchainUsecase(itemDAO, purchaseDAO)
+	blockchainHandler := blockchainHdr.NewBlockchainHandler(blockchainUsecase)
+
 	// HTTPルーティング
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
@@ -92,6 +98,9 @@ func main() {
 	http.HandleFunc("/likes", likeHandler.HandleLike)
 	http.HandleFunc("/likes/status", likeHandler.GetLikeStatus)
 	http.HandleFunc("/likes/user", likeHandler.GetUserLikes)
+	// Blockchain endpoints
+	http.HandleFunc("/api/v1/blockchain/item-listed", blockchainHandler.HandleItemListed)
+	http.HandleFunc("/api/v1/blockchain/item-purchased", blockchainHandler.HandleItemPurchased)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	standardRouter := http.DefaultServeMux
