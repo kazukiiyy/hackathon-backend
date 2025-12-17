@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"uttc-hackathon-backend/usecase/postItems"
 )
 
@@ -29,7 +28,7 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 	priceStr := r.PostForm.Get("price")
 	file, fileHeader, err := r.FormFile("image")
 	uid := r.PostForm.Get("sellerUid")
-	ifPurchasedStr := r.PostForm.Get("ifpurchased")
+	status := r.PostForm.Get("status")
 	category := r.PostForm.Get("category")
 
 	if err != nil && err != http.ErrMissingFile {
@@ -43,20 +42,12 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	var ifPurchased bool
-	if ifPurchasedStr == "" {
-		ifPurchased = false
-	} else {
-		var err error
-		ifPurchased, err = strconv.ParseBool(ifPurchasedStr)
-		if err != nil {
-			fmt.Println("Error parsing ifPurchased:", err)
-			writeJSONError(w, "Invalid ifpurchased value", http.StatusBadRequest)
-			return
-		}
+	// statusが空の場合はデフォルトで"listed"を設定
+	if status == "" {
+		status = "listed"
 	}
 
-	response, imageURLs, err := h.postItemsUc.CreateItem(title, explanation, priceStr, file, fileHeader, uid, ifPurchased, category)
+	response, imageURLs, err := h.postItemsUc.CreateItem(title, explanation, priceStr, file, fileHeader, uid, status, category)
 	if err != nil {
 		fmt.Println("Error creating item:", err)
 		writeJSONError(w, "Failed to create item", http.StatusInternalServerError)

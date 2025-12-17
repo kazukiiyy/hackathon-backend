@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"os"
+
 	getItemDao "uttc-hackathon-backend/dao/getItems"
 	likesDao "uttc-hackathon-backend/dao/likes"
 	messagesDao "uttc-hackathon-backend/dao/messages"
@@ -26,11 +28,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"log"
-	"os"
 )
 
 func main() {
-
 	mysqlUser := os.Getenv("MYSQL_USER")
 	mysqlUserPwd := os.Getenv("MYSQL_USER_PWD")
 	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
@@ -52,6 +52,7 @@ func main() {
 
 	log.Println("Connected to Cloud SQL!")
 
+	// 既存のハンドラー設定
 	itemDAO := postItemsDao.NewItemDAO(db)
 	itemUsecase := postItemsUc.NewItemUsecase(itemDAO)
 	itemHandler := postItemsHdr.NewItemHandler(itemUsecase)
@@ -76,6 +77,7 @@ func main() {
 	likeUsecase := likesUc.NewLikeUsecase(likeDAO)
 	likeHandler := likesHdr.NewLikeHandler(likeUsecase)
 
+	// HTTPルーティング
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/getItems", getItemHandler.GetItems)
 	http.HandleFunc("/getItems/latest", getItemHandler.GetLatestItems)
@@ -91,12 +93,13 @@ func main() {
 	http.HandleFunc("/likes/status", likeHandler.GetLikeStatus)
 	http.HandleFunc("/likes/user", likeHandler.GetUserLikes)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
+
 	standardRouter := http.DefaultServeMux
 	finalHandler := corsMiddleware(standardRouter)
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // ローカル用 fallback
+		port = "8080"
 	}
 
 	log.Printf("Server listening on port %s", port)
@@ -104,5 +107,4 @@ func main() {
 	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
 		log.Fatal(err)
 	}
-
 }

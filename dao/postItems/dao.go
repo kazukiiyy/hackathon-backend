@@ -12,7 +12,7 @@ func NewItemDAO(db *sql.DB) *ItemDAO {
 	return &ItemDAO{db: db}
 }
 
-func (d *ItemDAO) InsertItem(title string, price int, explanation string, imageURLs []string, uid string, ifPurchased bool, category string) error {
+func (d *ItemDAO) InsertItem(title string, price int, explanation string, imageURLs []string, uid string, status string, category string) error {
 	// トランザクション開始
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -21,8 +21,8 @@ func (d *ItemDAO) InsertItem(title string, price int, explanation string, imageU
 	defer tx.Rollback()
 
 	// itemsテーブルに挿入
-	query := "INSERT INTO items (title, price, explanation, uid, ifPurchased, category) VALUES (?, ?, ?, ?, ?, ?)"
-	result, err := tx.Exec(query, title, price, explanation, uid, ifPurchased, category)
+	query := "INSERT INTO items (title, price, explanation, uid, status, category) VALUES (?, ?, ?, ?, ?, ?)"
+	result, err := tx.Exec(query, title, price, explanation, uid, status, category)
 	if err != nil {
 		return err
 	}
