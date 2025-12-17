@@ -7,8 +7,9 @@ import (
 
 // PurchaseDAOInterface はモック化のためのインターフェース
 type PurchaseDAOInterface interface {
-	UpdatePurchaseStatus(itemID int, buyerUID string) error
+	UpdatePurchaseStatus(itemID int, buyerUID string, buyerAddress string) error
 	GetPurchasedItems(buyerUID string) ([]*PurchasedItem, error)
+	GetUIDByWalletAddress(walletAddress string) (string, error)
 }
 
 type PurchaseDAO struct {
@@ -30,16 +31,16 @@ func NewPurchaseDAO(db *sql.DB) *PurchaseDAO {
 	return &PurchaseDAO{db: db}
 }
 
-func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string) error {
+func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAddress string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	// itemsテーブルのstatusを更新
-	updateQuery := "UPDATE items SET status = 'purchased' WHERE id = ? AND status = 'listed'"
-	result, err := tx.Exec(updateQuery, itemID)
+	// itemsテーブルのstatusとbuyer_addressを更新
+	updateQuery := "UPDATE items SET status = 'purchased', buyer_address = ? WHERE id = ? AND status = 'listed'"
+	result, err := tx.Exec(updateQuery, buyerAddress, itemID)
 	if err != nil {
 		return err
 	}
@@ -53,14 +54,25 @@ func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string) error {
 		return sql.ErrNoRows
 	}
 
-	// purchasesテーブルに購入情報を挿入
-	insertQuery := "INSERT INTO purchases (item_id, buyer_uid) VALUES (?, ?)"
-	_, err = tx.Exec(insertQuery, itemID, buyerUID)
+	// purchasesテーブルに購入情報を挿入（buyer_addressも含む）
+	insertQuery := "INSERT INTO purchases (item_id, buyer_uid, buyer_address) VALUES (?, ?, ?)"
+	_, err = tx.Exec(insertQuery, itemID, buyerUID, buyerAddress)
 	if err != nil {
 		return err
 	}
 
 	return tx.Commit()
+}
+
+// GetUIDByWalletAddress はウォレットアドレスからUIDを取得
+func (d *PurchaseDAO) GetUIDByWalletAddress(walletAddress string) (string, error) {
+	query := "SELECT uid FROM users WHERE wallet_address = ? LIMIT 1"
+	var uid string
+	err := d.db.QueryRow(query, walletAddress).Scan(&uid)
+	if err != nil {
+		return "", err
+	}
+	return uid, nil
 }
 
 // 購入した商品一覧を取得

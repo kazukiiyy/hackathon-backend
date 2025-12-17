@@ -53,7 +53,7 @@ func (uc *BlockchainUsecase) HandleItemListed(chainItemID int64, tokenID int64, 
 	}
 
 	// 既存の商品（uidとtitleでマッチング、chain_item_idがNULL）を検索
-	existingItemID, err := uc.itemDAO.FindItemByUidAndTitle(uid, title)
+	existingItemID, err = uc.itemDAO.FindItemByUidAndTitle(uid, title)
 	if err == nil && existingItemID > 0 {
 		// 既存の商品にchain_item_idを関連付ける
 		if err := uc.itemDAO.UpdateChainItemID(existingItemID, chainItemID, seller, tokenID); err != nil {
@@ -78,10 +78,15 @@ func (uc *BlockchainUsecase) HandleItemPurchased(chainItemID int64, buyer string
 		return fmt.Errorf("item not found for chain_item_id %d: %w", chainItemID, err)
 	}
 
-	// 購入状態を更新（buyer_uidは空文字列として扱う、またはbuyerアドレスをUIDとして扱う）
-	// 注意: buyerはアドレスなので、UIDに変換する必要がある場合がある
-	// ここでは簡易的にbuyerアドレスをUIDとして扱う
-	if err := uc.purchaseDAO.UpdatePurchaseStatus(int(itemID), buyer); err != nil {
+	// buyerアドレスからUIDを取得（見つからない場合は空文字列）
+	buyerUID := ""
+	uid, err := uc.purchaseDAO.GetUIDByWalletAddress(buyer)
+	if err == nil {
+		buyerUID = uid
+	}
+
+	// 購入状態を更新（buyer_addressも保存）
+	if err := uc.purchaseDAO.UpdatePurchaseStatus(int(itemID), buyerUID, buyer); err != nil {
 		return fmt.Errorf("failed to update purchase status: %w", err)
 	}
 

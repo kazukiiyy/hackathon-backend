@@ -23,7 +23,7 @@ func NewMockPurchaseDAO() *MockPurchaseDAO {
 	}
 }
 
-func (m *MockPurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string) error {
+func (m *MockPurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAddress string) error {
 	if m.updateErr != nil {
 		return m.updateErr
 	}
@@ -41,6 +41,11 @@ func (m *MockPurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string) erro
 	}
 	m.purchases[buyerUID] = append(m.purchases[buyerUID], item)
 	return nil
+}
+
+func (m *MockPurchaseDAO) GetUIDByWalletAddress(walletAddress string) (string, error) {
+	// テスト用の簡易実装（実際の実装ではDBから取得）
+	return "", errors.New("not found")
 }
 
 func (m *MockPurchaseDAO) GetPurchasedItems(buyerUID string) ([]*dao.PurchasedItem, error) {

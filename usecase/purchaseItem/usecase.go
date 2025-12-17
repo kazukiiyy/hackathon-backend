@@ -13,7 +13,8 @@ func NewPurchaseUsecase(purchaseDAO dao.PurchaseDAOInterface) *PurchaseUsecase {
 }
 
 func (u *PurchaseUsecase) PurchaseItem(itemID int, buyerUID string) error {
-	return u.purchaseDAO.UpdatePurchaseStatus(itemID, buyerUID)
+	// 従来の購入フロー（cash購入）ではbuyer_addressは空文字列
+	return u.purchaseDAO.UpdatePurchaseStatus(itemID, buyerUID, "")
 }
 
 func (u *PurchaseUsecase) GetPurchasedItems(buyerUID string) ([]*dao.PurchasedItem, error) {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"uttc-hackathon-backend/usecase/postItems"
 )
 
 // UploadImage は画像のみをアップロードしてURLを返す

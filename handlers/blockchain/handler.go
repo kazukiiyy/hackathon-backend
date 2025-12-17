@@ -3,8 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"uttc-hackathon-backend/dao/postItems"
 	"uttc-hackathon-backend/usecase/blockchain"
 )
 
