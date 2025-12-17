@@ -2,6 +2,7 @@ package getItems
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -53,7 +54,7 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items WHERE category = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	rows, err := d.db.Query(query, category, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query items by category: %w", err)
 	}
 	defer rows.Close()
 
@@ -62,14 +63,34 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 		var item Item
 		var chainItemID sql.NullInt64
 		var priceStr string
-		err := rows.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
+		var explanation sql.NullString
+		var category sql.NullString
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &item.Status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan item row: %w", err)
 		}
+		
+		// explanationの処理
+		if explanation.Valid {
+			item.Explanation = explanation.String
+		} else {
+			item.Explanation = ""
+		}
+		
+		// categoryの処理
+		if category.Valid {
+			item.Category = category.String
+		} else {
+			item.Category = ""
+		}
+		
 		// priceを文字列からintに変換
+		if priceStr == "" {
+			return nil, fmt.Errorf("price is empty for item id %d", item.ID)
+		}
 		priceInt, err := strconv.Atoi(priceStr)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert price '%s' to int for item id %d: %w", priceStr, item.ID, err)
 		}
 		item.Price = priceInt
 		if chainItemID.Valid {
@@ -81,14 +102,14 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	// 各アイテムの画像URLを取得
 	for _, item := range items {
 		urls, err := d.getImageURLsForItem(item.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get image URLs for item id %d: %w", item.ID, err)
 		}
 		item.ImageURLs = urls
 	}
@@ -103,14 +124,42 @@ func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
 	var item Item
 	var chainItemID sql.NullInt64
 	var priceStr string
-	err := row.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
+	var explanation sql.NullString
+	var category sql.NullString
+	var status sql.NullString
+	err := row.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to scan item row: %w", err)
 	}
+	
+	// explanationの処理
+	if explanation.Valid {
+		item.Explanation = explanation.String
+	} else {
+		item.Explanation = ""
+	}
+	
+	// categoryの処理
+	if category.Valid {
+		item.Category = category.String
+	} else {
+		item.Category = ""
+	}
+	
+	// statusの処理
+	if status.Valid {
+		item.Status = status.String
+	} else {
+		item.Status = "listed" // デフォルト値
+	}
+	
 	// priceを文字列からintに変換
+	if priceStr == "" {
+		return nil, fmt.Errorf("price is empty for item id %d", item.ID)
+	}
 	priceInt, err := strconv.Atoi(priceStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert price '%s' to int for item id %d: %w", priceStr, item.ID, err)
 	}
 	item.Price = priceInt
 	if chainItemID.Valid {
@@ -122,7 +171,7 @@ func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
 	// 画像URLを取得
 	urls, err := d.getImageURLsForItem(item.ID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get image URLs for item id %d: %w", item.ID, err)
 	}
 	item.ImageURLs = urls
 
@@ -134,7 +183,7 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items ORDER BY created_at DESC LIMIT ?"
 	rows, err := d.db.Query(query, limit)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query latest items: %w", err)
 	}
 	defer rows.Close()
 
@@ -143,16 +192,45 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 		var item Item
 		var chainItemID sql.NullInt64
 		var priceStr string
-		err := rows.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
+		var explanation sql.NullString
+		var category sql.NullString
+		var status sql.NullString
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan item row: %w", err)
 		}
+		
+		// explanationの処理
+		if explanation.Valid {
+			item.Explanation = explanation.String
+		} else {
+			item.Explanation = ""
+		}
+		
+		// categoryの処理
+		if category.Valid {
+			item.Category = category.String
+		} else {
+			item.Category = ""
+		}
+		
+		// statusの処理
+		if status.Valid {
+			item.Status = status.String
+		} else {
+			item.Status = "listed" // デフォルト値
+		}
+		
 		// priceを文字列からintに変換
+		if priceStr == "" {
+			return nil, fmt.Errorf("price is empty for item id %d", item.ID)
+		}
 		priceInt, err := strconv.Atoi(priceStr)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert price '%s' to int for item id %d: %w", priceStr, item.ID, err)
 		}
 		item.Price = priceInt
+		
 		if chainItemID.Valid {
 			val := chainItemID.Int64
 			item.ChainItemID = &val
@@ -162,13 +240,13 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	for _, item := range items {
 		urls, err := d.getImageURLsForItem(item.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get image URLs for item id %d: %w", item.ID, err)
 		}
 		item.ImageURLs = urls
 	}
@@ -180,7 +258,7 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items WHERE uid = ? ORDER BY created_at DESC"
 	rows, err := d.db.Query(query, uid)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query items by uid: %w", err)
 	}
 	defer rows.Close()
 
@@ -189,14 +267,34 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 		var item Item
 		var chainItemID sql.NullInt64
 		var priceStr string
-		err := rows.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
+		var explanation sql.NullString
+		var category sql.NullString
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &item.Status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan item row: %w", err)
 		}
+		
+		// explanationの処理
+		if explanation.Valid {
+			item.Explanation = explanation.String
+		} else {
+			item.Explanation = ""
+		}
+		
+		// categoryの処理
+		if category.Valid {
+			item.Category = category.String
+		} else {
+			item.Category = ""
+		}
+		
 		// priceを文字列からintに変換
+		if priceStr == "" {
+			return nil, fmt.Errorf("price is empty for item id %d", item.ID)
+		}
 		priceInt, err := strconv.Atoi(priceStr)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert price '%s' to int for item id %d: %w", priceStr, item.ID, err)
 		}
 		item.Price = priceInt
 		if chainItemID.Valid {
@@ -208,14 +306,14 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	// 各アイテムの画像URLを取得
 	for _, item := range items {
 		urls, err := d.getImageURLsForItem(item.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get image URLs for item id %d: %w", item.ID, err)
 		}
 		item.ImageURLs = urls
 	}

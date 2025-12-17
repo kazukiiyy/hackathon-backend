@@ -2,6 +2,8 @@ package getItems
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"uttc-hackathon-backend/usecase/getItems"
@@ -114,12 +116,15 @@ func (h *ItemHandler) GetLatestItems(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.getItemUc.GetLatestItems(limit)
 	if err != nil {
-		writeJSONError(w, "Failed to get latest items", http.StatusInternalServerError)
+		// エラーログを出力（デバッグ用）
+		log.Printf("Error in GetLatestItems: %v", err)
+		writeJSONError(w, fmt.Sprintf("Failed to get latest items: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {
+		log.Printf("Error encoding JSON in GetLatestItems: %v", err)
 		writeJSONError(w, "JSON encode error", http.StatusInternalServerError)
 	}
 }
