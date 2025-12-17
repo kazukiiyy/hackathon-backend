@@ -39,3 +39,18 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 	return wrappedFunc
 }
+
+// loggingResponseWriter はレスポンスのステータスコードを記録するためのラッパー
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
+	return lrw.ResponseWriter.Write(b)
+}
