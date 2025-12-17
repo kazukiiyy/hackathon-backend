@@ -37,8 +37,8 @@ func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string) error {
 	}
 	defer tx.Rollback()
 
-	// itemsテーブルのifPurchasedを更新
-	updateQuery := "UPDATE items SET ifPurchased = true WHERE id = ? AND ifPurchased = false"
+	// itemsテーブルのstatusを更新
+	updateQuery := "UPDATE items SET status = 'purchased' WHERE id = ? AND status = 'listed'"
 	result, err := tx.Exec(updateQuery, itemID)
 	if err != nil {
 		return err

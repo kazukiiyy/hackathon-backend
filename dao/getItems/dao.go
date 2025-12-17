@@ -12,7 +12,7 @@ type Item struct {
 	Explanation string    `json:"explanation"`
 	ImageURLs   []string  `json:"image_urls"`
 	UID         string    `json:"uid"`
-	IfPurchased bool      `json:"ifPurchased"`
+	Status      string    `json:"status"`
 	Category    string    `json:"category"`
 	LikeCount   int       `json:"like_count"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -47,7 +47,7 @@ func (d *ItemDAO) getImageURLsForItem(itemID int) ([]string, error) {
 
 func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item, error) {
 	offset := (page - 1) * limit
-	query := "SELECT id, title, price, explanation, uid, ifPurchased, category, like_count, created_at FROM items WHERE category = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items WHERE category = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	rows, err := d.db.Query(query, category, limit, offset)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 	var items []*Item
 	for rows.Next() {
 		var item Item
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.IfPurchased, &item.Category, &item.LikeCount, &item.CreatedAt)
+		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -81,11 +81,11 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 }
 
 func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
-	query := "SELECT id, title, price, explanation, uid, ifPurchased, category, like_count, created_at FROM items WHERE id = ?"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items WHERE id = ?"
 	row := d.db.QueryRow(query, id)
 
 	var item Item
-	err := row.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.IfPurchased, &item.Category, &item.LikeCount, &item.CreatedAt)
+	err := row.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
 
 // 新着商品を取得
 func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
-	query := "SELECT id, title, price, explanation, uid, ifPurchased, category, like_count, created_at FROM items ORDER BY created_at DESC LIMIT ?"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items ORDER BY created_at DESC LIMIT ?"
 	rows, err := d.db.Query(query, limit)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 	var items []*Item
 	for rows.Next() {
 		var item Item
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.IfPurchased, &item.Category, &item.LikeCount, &item.CreatedAt)
+		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +135,7 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 }
 
 func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
-	query := "SELECT id, title, price, explanation, uid, ifPurchased, category, like_count, created_at FROM items WHERE uid = ? ORDER BY created_at DESC"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items WHERE uid = ? ORDER BY created_at DESC"
 	rows, err := d.db.Query(query, uid)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 	var items []*Item
 	for rows.Next() {
 		var item Item
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.IfPurchased, &item.Category, &item.LikeCount, &item.CreatedAt)
+		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
