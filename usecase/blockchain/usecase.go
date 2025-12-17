@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 	postItemsDao "uttc-hackathon-backend/dao/postItems"
 	purchaseItemDao "uttc-hackathon-backend/dao/purchaseItem"
@@ -22,15 +23,33 @@ func NewBlockchainUsecase(itemDAO *postItemsDao.ItemDAO, purchaseDAO *purchaseIt
 // HandleItemListed はonchainで商品が登録された際に呼ばれる
 // onchainのイベントから商品情報を取得してDBに挿入する
 func (uc *BlockchainUsecase) HandleItemListed(chainItemID int64, tokenID int64, title string, priceWei string, explanation string, imageURL string, uid string, category string, seller string, createdAt int64, txHash string) error {
+	log.Printf("HandleItemListed called: chain_item_id=%d, title=%s, uid=%s, seller=%s, price_wei=%s", chainItemID, title, uid, seller, priceWei)
+	
+	// バリデーション
+	if title == "" {
+		return fmt.Errorf("title is required")
+	}
+	if uid == "" {
+		log.Printf("WARNING: uid is empty for chain_item_id=%d, title=%s, seller=%s", chainItemID, title, seller)
+		// uidが空でも処理を続行（sellerアドレスから推測できる可能性がある）
+		// ただし、データベースの制約でエラーになる可能性がある
+	}
+	if seller == "" {
+		return fmt.Errorf("seller address is required")
+	}
+
 	// 既にchain_item_idで商品が存在するか確認
 	existingItemID, err := uc.itemDAO.FindItemByChainItemID(chainItemID)
 	if err == nil && existingItemID > 0 {
+		log.Printf("Item with chain_item_id=%d already exists (item_id=%d), updating...", chainItemID, existingItemID)
 		// 既に存在する場合は更新のみ
 		if err := uc.itemDAO.UpdateChainItemID(existingItemID, chainItemID, seller, tokenID); err != nil {
 			return fmt.Errorf("failed to update chain_item_id: %w", err)
 		}
+		log.Printf("Successfully updated existing item (item_id=%d)", existingItemID)
 		return nil
 	}
+	log.Printf("No existing item found with chain_item_id=%d", chainItemID)
 
 	// 価格をWeiから円に変換（1円 = 0.000001 ETH = 10^12 Wei）
 	priceInt := 0
@@ -55,17 +74,23 @@ func (uc *BlockchainUsecase) HandleItemListed(chainItemID int64, tokenID int64, 
 	// 既存の商品（uidとtitleでマッチング、chain_item_idがNULL）を検索
 	existingItemID, err = uc.itemDAO.FindItemByUidAndTitle(uid, title)
 	if err == nil && existingItemID > 0 {
+		log.Printf("Found existing item by uid and title (item_id=%d), linking chain_item_id...", existingItemID)
 		// 既存の商品にchain_item_idを関連付ける
 		if err := uc.itemDAO.UpdateChainItemID(existingItemID, chainItemID, seller, tokenID); err != nil {
 			return fmt.Errorf("failed to update chain_item_id: %w", err)
 		}
+		log.Printf("Successfully linked chain_item_id=%d to existing item (item_id=%d)", chainItemID, existingItemID)
 		return nil
 	}
+	log.Printf("No existing item found by uid=%s and title=%s, creating new item...", uid, title)
 
 	// InsertItemWithChainIDを使用してchain_item_idを含めて挿入
+	log.Printf("Inserting new item: title=%s, price=%d, chain_item_id=%d, uid=%s", title, priceInt, chainItemID, uid)
 	if err := uc.itemDAO.InsertItemWithChainID(title, priceInt, explanation, imageURLs, uid, "listed", category, chainItemID, seller, tokenID); err != nil {
+		log.Printf("Error inserting item: %v", err)
 		return fmt.Errorf("failed to create item: %w", err)
 	}
+	log.Printf("Successfully created new item with chain_item_id=%d", chainItemID)
 
 	return nil
 }

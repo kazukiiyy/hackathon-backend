@@ -88,7 +88,7 @@ func (d *ItemDAO) InsertItemWithChainID(title string, price int, explanation str
 	// トランザクション開始
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -99,7 +99,8 @@ func (d *ItemDAO) InsertItemWithChainID(title string, price int, explanation str
 	query := "INSERT INTO items (title, price, explanation, uid, status, category, chain_item_id, seller_address, token_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	result, err := tx.Exec(query, title, priceStr, explanation, uid, status, category, chainItemID, sellerAddress, tokenID)
 	if err != nil {
-		return err
+		// より詳細なエラーメッセージを返す
+		return fmt.Errorf("failed to insert item into items table (title=%s, chain_item_id=%d, uid=%s): %w", title, chainItemID, uid, err)
 	}
 
 	// 挿入したアイテムのIDを取得
@@ -110,12 +111,18 @@ func (d *ItemDAO) InsertItemWithChainID(title string, price int, explanation str
 
 	// item_imagesテーブルに画像URLを挿入
 	if len(imageURLs) > 0 {
+		// chain_item_idカラムがある場合は含める、ない場合はitem_idのみ
 		imageQuery := "INSERT INTO item_images (item_id, image_url, chain_item_id) VALUES (?, ?, ?)"
 		for _, url := range imageURLs {
 			if url != "" {
 				_, err := tx.Exec(imageQuery, itemID, url, chainItemID)
 				if err != nil {
-					return err
+					// chain_item_idカラムがない可能性があるので、item_idのみで再試行
+					imageQueryFallback := "INSERT INTO item_images (item_id, image_url) VALUES (?, ?)"
+					_, err2 := tx.Exec(imageQueryFallback, itemID, url)
+					if err2 != nil {
+						return fmt.Errorf("failed to insert image URL: %w (original error: %v)", err2, err)
+					}
 				}
 			}
 		}

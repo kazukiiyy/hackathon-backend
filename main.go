@@ -100,12 +100,24 @@ func main() {
 	http.HandleFunc("/likes/status", likeHandler.GetLikeStatus)
 	http.HandleFunc("/likes/user", likeHandler.GetUserLikes)
 	// Blockchain endpoints
-	http.HandleFunc("/api/v1/blockchain/item-listed", blockchainHandler.HandleItemListed)
+	log.Printf("Registering blockchain endpoints...")
+	http.HandleFunc("/api/v1/blockchain/item-listed", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Route /api/v1/blockchain/item-listed matched: method=%s", r.Method)
+		blockchainHandler.HandleItemListed(w, r)
+	})
 	http.HandleFunc("/api/v1/blockchain/item-purchased", blockchainHandler.HandleItemPurchased)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	standardRouter := http.DefaultServeMux
-	finalHandler := corsMiddleware(standardRouter)
+	
+	// デバッグ用: すべてのリクエストをログに記録
+	loggingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Incoming request: method=%s, path=%s, origin=%s", r.Method, r.URL.Path, r.Header.Get("Origin"))
+		corsMiddleware(standardRouter).ServeHTTP(w, r)
+	})
+	
+	finalHandler := loggingHandler
+	log.Printf("All routes registered, CORS middleware and logging applied")
 
 	port := os.Getenv("PORT")
 	if port == "" {

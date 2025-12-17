@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"uttc-hackathon-backend/usecase/blockchain"
 )
@@ -16,7 +18,10 @@ func NewBlockchainHandler(uc *blockchain.BlockchainUsecase) *BlockchainHandler {
 
 // HandleItemListed はonchainサービスからItemListedイベントを受け取る
 func (h *BlockchainHandler) HandleItemListed(w http.ResponseWriter, r *http.Request) {
+	log.Printf("HandleItemListed called: method=%s, path=%s", r.Method, r.URL.Path)
+	
 	if r.Method != http.MethodPost {
+		log.Printf("Method not allowed: %s", r.Method)
 		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -35,15 +40,35 @@ func (h *BlockchainHandler) HandleItemListed(w http.ResponseWriter, r *http.Requ
 		TxHash      string `json:"tx_hash"`
 	}
 
+	// リクエストボディを読み取る前にログ出力
+	log.Printf("Reading request body...")
+	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		writeJSONError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	log.Printf("Received ItemListed event: chain_item_id=%d, title=%s, uid=%s, seller=%s, price_wei=%s", req.ChainItemID, req.Title, req.UID, req.Seller, req.PriceWei)
+	
+	// 空の値チェック
+	if req.UID == "" {
+		log.Printf("WARNING: uid is empty in request")
+	}
+	if req.Title == "" {
+		log.Printf("WARNING: title is empty in request")
+	}
+	if req.Seller == "" {
+		log.Printf("WARNING: seller is empty in request")
+	}
+
 	if err := h.blockchainUC.HandleItemListed(req.ChainItemID, req.TokenID, req.Title, req.PriceWei, req.Explanation, req.ImageURL, req.UID, req.Category, req.Seller, req.CreatedAt, req.TxHash); err != nil {
-		writeJSONError(w, "Failed to process item listed event", http.StatusInternalServerError)
+		log.Printf("Error processing ItemListed event: %v", err)
+		writeJSONError(w, fmt.Sprintf("Failed to process item listed event: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("Successfully processed ItemListed event for chain_item_id=%d", req.ChainItemID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Item listed event processed successfully"})

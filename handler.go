@@ -13,8 +13,15 @@ func handleCors(next http.Handler, w http.ResponseWriter, r *http.Request) {
 		"https://uttc-hackathon-frontend-pink.vercel.app":                                true,
 	}
 
-	if allowedOrigins[origin] {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+	// back-onchainからのリクエストはOriginがないか、異なるOriginの可能性がある
+	// その場合はすべてのOriginを許可（サーバー間通信のため）
+	if origin == "" || allowedOrigins[origin] {
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			// Originがない場合は*を設定（サーバー間通信）
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 	}
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
