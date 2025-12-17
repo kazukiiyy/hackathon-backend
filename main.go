@@ -29,8 +29,6 @@ import (
 	purchaseItemUc "uttc-hackathon-backend/usecase/purchaseItem"
 
 	_ "github.com/go-sql-driver/mysql"
-
-	"log"
 )
 
 func main() {
@@ -101,34 +99,22 @@ func main() {
 	http.HandleFunc("/likes/status", likeHandler.GetLikeStatus)
 	http.HandleFunc("/likes/user", likeHandler.GetUserLikes)
 	// Blockchain endpoints
-	log.Printf("Registering blockchain endpoints...")
-	http.HandleFunc("/api/v1/blockchain/item-listed", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Route /api/v1/blockchain/item-listed matched: method=%s", r.Method)
-		blockchainHandler.HandleItemListed(w, r)
-	})
+	http.HandleFunc("/api/v1/blockchain/item-listed", blockchainHandler.HandleItemListed)
 	http.HandleFunc("/api/v1/blockchain/item-purchased", blockchainHandler.HandleItemPurchased)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	standardRouter := http.DefaultServeMux
 	
-	// デバッグ用: すべてのリクエストとレスポンスをログに記録
 	loggingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Incoming request: method=%s, path=%s, origin=%s", r.Method, r.URL.Path, r.Header.Get("Origin"))
-		
-		// レスポンスのステータスコードを記録するためのラッパー
 		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		corsMiddleware(standardRouter).ServeHTTP(lrw, r)
 		
-		// ステータスコードをログに記録（エラーの場合のみ詳細に記録）
 		if lrw.statusCode >= 400 {
-			log.Printf("Request failed: method=%s, path=%s, status=%d", r.Method, r.URL.Path, lrw.statusCode)
-		} else if lrw.statusCode >= 200 && lrw.statusCode < 300 {
-			log.Printf("Request succeeded: method=%s, path=%s, status=%d", r.Method, r.URL.Path, lrw.statusCode)
+			log.Printf("Request failed: %s %s status=%d", r.Method, r.URL.Path, lrw.statusCode)
 		}
 	})
 	
 	finalHandler := loggingHandler
-	log.Printf("All routes registered, CORS middleware and logging applied")
 
 	port := os.Getenv("PORT")
 	if port == "" {
