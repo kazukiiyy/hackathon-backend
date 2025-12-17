@@ -5,10 +5,16 @@ import (
 	"strconv"
 )
 
-func priceToInt(price string) int {
+func priceToInt(price string) (int, error) {
+	if price == "" {
+		return 0, fmt.Errorf("price is required")
+	}
 	priceInt, err := strconv.Atoi(price)
 	if err != nil {
-		fmt.Errorf("invalid price format: %w", err)
+		return 0, fmt.Errorf("invalid price format: %w", err)
 	}
-	return priceInt
+	if priceInt <= 0 {
+		return 0, fmt.Errorf("price must be greater than 0")
+	}
+	return priceInt, nil
 }

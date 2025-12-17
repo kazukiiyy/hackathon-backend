@@ -47,10 +47,30 @@ func (h *ItemHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 		status = "listed"
 	}
 
+	// バリデーション
+	if title == "" {
+		writeJSONError(w, "title is required", http.StatusBadRequest)
+		return
+	}
+	if uid == "" {
+		writeJSONError(w, "uid is required", http.StatusBadRequest)
+		return
+	}
+	if category == "" {
+		writeJSONError(w, "category is required", http.StatusBadRequest)
+		return
+	}
+	if priceStr == "" {
+		writeJSONError(w, "price is required", http.StatusBadRequest)
+		return
+	}
+
 	response, imageURLs, err := h.postItemsUc.CreateItem(title, explanation, priceStr, file, fileHeader, uid, status, category)
 	if err != nil {
-		fmt.Println("Error creating item:", err)
-		writeJSONError(w, "Failed to create item", http.StatusInternalServerError)
+		fmt.Printf("Error creating item - Title: %s, UID: %s, Error: %v\n", title, uid, err)
+		// エラーメッセージを詳細に返す（開発環境用）
+		errorMsg := fmt.Sprintf("Failed to create item: %v", err)
+		writeJSONError(w, errorMsg, http.StatusInternalServerError)
 		return
 	}
 

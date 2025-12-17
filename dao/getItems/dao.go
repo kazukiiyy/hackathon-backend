@@ -2,6 +2,7 @@ package getItems
 
 import (
 	"database/sql"
+	"strconv"
 	"time"
 )
 
@@ -16,6 +17,8 @@ type Item struct {
 	Category    string    `json:"category"`
 	LikeCount   int       `json:"like_count"`
 	CreatedAt   time.Time `json:"created_at"`
+	ChainItemID *int64    `json:"chain_item_id,omitempty"`
+	IfPurchased bool      `json:"ifPurchased"`
 }
 
 type ItemDAO struct {
@@ -47,7 +50,7 @@ func (d *ItemDAO) getImageURLsForItem(itemID int) ([]string, error) {
 
 func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item, error) {
 	offset := (page - 1) * limit
-	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items WHERE category = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items WHERE category = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
 	rows, err := d.db.Query(query, category, limit, offset)
 	if err != nil {
 		return nil, err
@@ -57,10 +60,23 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 	var items []*Item
 	for rows.Next() {
 		var item Item
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
+		var chainItemID sql.NullInt64
+		var priceStr string
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
 			return nil, err
 		}
+		// priceを文字列からintに変換
+		priceInt, err := strconv.Atoi(priceStr)
+		if err != nil {
+			return nil, err
+		}
+		item.Price = priceInt
+		if chainItemID.Valid {
+			val := chainItemID.Int64
+			item.ChainItemID = &val
+		}
+		item.IfPurchased = item.Status == "purchased" || item.Status == "completed"
 		items = append(items, &item)
 	}
 
@@ -81,14 +97,27 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 }
 
 func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
-	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items WHERE id = ?"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items WHERE id = ?"
 	row := d.db.QueryRow(query, id)
 
 	var item Item
-	err := row.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
+	var chainItemID sql.NullInt64
+	var priceStr string
+	err := row.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 	if err != nil {
 		return nil, err
 	}
+	// priceを文字列からintに変換
+	priceInt, err := strconv.Atoi(priceStr)
+	if err != nil {
+		return nil, err
+	}
+	item.Price = priceInt
+	if chainItemID.Valid {
+		val := chainItemID.Int64
+		item.ChainItemID = &val
+	}
+	item.IfPurchased = item.Status == "purchased" || item.Status == "completed"
 
 	// 画像URLを取得
 	urls, err := d.getImageURLsForItem(item.ID)
@@ -102,7 +131,7 @@ func (d *ItemDAO) GetItemByID(id int) (*Item, error) {
 
 // 新着商品を取得
 func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
-	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items ORDER BY created_at DESC LIMIT ?"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items ORDER BY created_at DESC LIMIT ?"
 	rows, err := d.db.Query(query, limit)
 	if err != nil {
 		return nil, err
@@ -112,10 +141,23 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 	var items []*Item
 	for rows.Next() {
 		var item Item
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
+		var chainItemID sql.NullInt64
+		var priceStr string
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
 			return nil, err
 		}
+		// priceを文字列からintに変換
+		priceInt, err := strconv.Atoi(priceStr)
+		if err != nil {
+			return nil, err
+		}
+		item.Price = priceInt
+		if chainItemID.Valid {
+			val := chainItemID.Int64
+			item.ChainItemID = &val
+		}
+		item.IfPurchased = item.Status == "purchased" || item.Status == "completed"
 		items = append(items, &item)
 	}
 
@@ -135,7 +177,7 @@ func (d *ItemDAO) GetLatestItems(limit int) ([]*Item, error) {
 }
 
 func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
-	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at FROM items WHERE uid = ? ORDER BY created_at DESC"
+	query := "SELECT id, title, price, explanation, uid, status, category, like_count, created_at, chain_item_id FROM items WHERE uid = ? ORDER BY created_at DESC"
 	rows, err := d.db.Query(query, uid)
 	if err != nil {
 		return nil, err
@@ -145,10 +187,23 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 	var items []*Item
 	for rows.Next() {
 		var item Item
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt)
+		var chainItemID sql.NullInt64
+		var priceStr string
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &item.Explanation, &item.UID, &item.Status, &item.Category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
 			return nil, err
 		}
+		// priceを文字列からintに変換
+		priceInt, err := strconv.Atoi(priceStr)
+		if err != nil {
+			return nil, err
+		}
+		item.Price = priceInt
+		if chainItemID.Valid {
+			val := chainItemID.Int64
+			item.ChainItemID = &val
+		}
+		item.IfPurchased = item.Status == "purchased" || item.Status == "completed"
 		items = append(items, &item)
 	}
 
