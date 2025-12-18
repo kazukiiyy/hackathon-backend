@@ -77,7 +77,7 @@ type GeminiUsecase struct {
 func NewGeminiUsecase() *GeminiUsecase {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		log.Fatal("GEMINI_API_KEY environment variable is not set")
+		log.Println("WARNING: GEMINI_API_KEY environment variable is not set")
 	}
 	return &GeminiUsecase{
 		apiKey: apiKey,
@@ -122,6 +122,13 @@ type GenerateContentResponse struct {
 }
 
 func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
+	// APIキーのチェック
+	if uc.apiKey == "" {
+		return &GenerateContentResponse{
+			Error: "GEMINI_API_KEY environment variable is not set",
+		}, fmt.Errorf("GEMINI_API_KEY environment variable is not set")
+	}
+
 	// システムプロンプトとユーザーメッセージを組み合わせる
 	// プロトコルが指定されている場合は追加
 	fullSystemPrompt := systemPrompt
@@ -168,16 +175,19 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("Gemini API request error: %v", err)
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("Gemini API response read error: %v", err)
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("Gemini API error: status=%d, body=%s", resp.StatusCode, string(body))
 		return &GenerateContentResponse{
 			Error: fmt.Sprintf("API error: status=%d, body=%s", resp.StatusCode, string(body)),
 		}, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
