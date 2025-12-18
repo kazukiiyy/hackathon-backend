@@ -163,7 +163,7 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	}
 
 	// Gemini APIエンドポイント
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s", uc.apiKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", uc.apiKey)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
