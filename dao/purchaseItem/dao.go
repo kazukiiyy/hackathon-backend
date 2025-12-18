@@ -39,7 +39,8 @@ func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAdd
 	defer tx.Rollback()
 
 	// itemsテーブルのstatusとbuyer_addressを更新
-	updateQuery := "UPDATE items SET status = 'purchased', buyer_address = ? WHERE id = ? AND status = 'listed'"
+	// statusが'listed'または'purchased'の場合に更新（重複イベントに対応）
+	updateQuery := "UPDATE items SET status = 'purchased', buyer_address = ? WHERE id = ? AND status IN ('listed', 'purchased')"
 	result, err := tx.Exec(updateQuery, buyerAddress, itemID)
 	if err != nil {
 		return err
@@ -51,12 +52,36 @@ func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAdd
 	}
 
 	if rowsAffected == 0 {
+		// 既に'completed'または'cancelled'の場合は更新しない（正常な状態）
+		// ただし、itemIDが存在しない場合はエラーを返す
+		var currentStatus string
+		checkQuery := "SELECT status FROM items WHERE id = ?"
+		err := tx.QueryRow(checkQuery, itemID).Scan(&currentStatus)
+		if err == sql.ErrNoRows {
+			return sql.ErrNoRows
+		}
+		if err != nil {
+			return err
+		}
+		// 既に'completed'または'cancelled'の場合は正常終了
+		if currentStatus == "completed" || currentStatus == "cancelled" {
+			return tx.Commit()
+		}
+		// その他の場合はエラー
 		return sql.ErrNoRows
 	}
 
 	// purchasesテーブルに購入情報を挿入（buyer_addressも含む）
-	insertQuery := "INSERT INTO purchases (item_id, buyer_uid, buyer_address) VALUES (?, ?, ?)"
-	_, err = tx.Exec(insertQuery, itemID, buyerUID, buyerAddress)
+	// 重複チェック: 既に同じitem_idとbuyer_addressの組み合わせが存在する場合はスキップ
+	insertQuery := `
+		INSERT INTO purchases (item_id, buyer_uid, buyer_address) 
+		SELECT ?, ?, ? 
+		WHERE NOT EXISTS (
+			SELECT 1 FROM purchases 
+			WHERE item_id = ? AND buyer_address = ?
+		)
+	`
+	_, err = tx.Exec(insertQuery, itemID, buyerUID, buyerAddress, itemID, buyerAddress)
 	if err != nil {
 		return err
 	}
