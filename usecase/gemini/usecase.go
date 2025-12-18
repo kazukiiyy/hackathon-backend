@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
@@ -76,8 +77,7 @@ type GeminiUsecase struct {
 func NewGeminiUsecase() *GeminiUsecase {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		// デフォルトのAPIキー（環境変数が設定されていない場合）
-		apiKey = "AIzaSyDz_FH_DI3xSvZuirMctfXHBYxgCoYziwk"
+		log.Fatal("GEMINI_API_KEY environment variable is not set")
 	}
 	return &GeminiUsecase{
 		apiKey: apiKey,
