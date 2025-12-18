@@ -17,6 +17,6 @@ func (u *PurchaseUsecase) PurchaseItem(itemID int, buyerUID string) error {
 	return u.purchaseDAO.UpdatePurchaseStatus(itemID, buyerUID, "")
 }
 
-func (u *PurchaseUsecase) GetPurchasedItems(buyerUID string) ([]*dao.PurchasedItem, error) {
-	return u.purchaseDAO.GetPurchasedItems(buyerUID)
+func (u *PurchaseUsecase) GetPurchasedItems(buyerUID string, buyerAddress string) ([]*dao.PurchasedItem, error) {
+	return u.purchaseDAO.GetPurchasedItems(buyerUID, buyerAddress)
 }

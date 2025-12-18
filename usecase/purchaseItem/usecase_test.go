@@ -48,11 +48,16 @@ func (m *MockPurchaseDAO) GetUIDByWalletAddress(walletAddress string) (string, e
 	return "", errors.New("not found")
 }
 
-func (m *MockPurchaseDAO) GetPurchasedItems(buyerUID string) ([]*dao.PurchasedItem, error) {
+func (m *MockPurchaseDAO) GetPurchasedItems(buyerUID string, buyerAddress string) ([]*dao.PurchasedItem, error) {
 	if m.getItemsErr != nil {
 		return nil, m.getItemsErr
 	}
 	return m.purchases[buyerUID], nil
+}
+
+func (m *MockPurchaseDAO) GetWalletAddressByUID(uid string) (string, error) {
+	// テスト用の簡易実装（実際の実装ではDBから取得）
+	return "", errors.New("not found")
 }
 
 // TestPurchaseItem_Success 購入成功
@@ -108,7 +113,7 @@ func TestGetPurchasedItems_Success(t *testing.T) {
 	_ = usecase.PurchaseItem(2, "buyer123")
 	_ = usecase.PurchaseItem(3, "buyer123")
 
-	items, err := usecase.GetPurchasedItems("buyer123")
+	items, err := usecase.GetPurchasedItems("buyer123", "")
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
@@ -122,7 +127,7 @@ func TestGetPurchasedItems_Empty(t *testing.T) {
 	mockDAO := NewMockPurchaseDAO()
 	usecase := NewPurchaseUsecase(mockDAO)
 
-	items, err := usecase.GetPurchasedItems("buyer123")
+	items, err := usecase.GetPurchasedItems("buyer123", "")
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}
@@ -153,8 +158,8 @@ func TestGetPurchasedItems_DifferentUsers(t *testing.T) {
 	_ = usecase.PurchaseItem(2, "buyer1")
 	_ = usecase.PurchaseItem(3, "buyer2")
 
-	items1, _ := usecase.GetPurchasedItems("buyer1")
-	items2, _ := usecase.GetPurchasedItems("buyer2")
+	items1, _ := usecase.GetPurchasedItems("buyer1", "")
+	items2, _ := usecase.GetPurchasedItems("buyer2", "")
 
 	if len(items1) != 2 {
 		t.Errorf("expected 2 items for buyer1, got %d", len(items1))
