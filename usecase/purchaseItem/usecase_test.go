@@ -142,7 +142,7 @@ func TestGetPurchasedItems_DAOError(t *testing.T) {
 	mockDAO.getItemsErr = errors.New("database error")
 	usecase := NewPurchaseUsecase(mockDAO)
 
-	_, err := usecase.GetPurchasedItems("buyer123")
+	_, err := usecase.GetPurchasedItems("buyer123", "")
 	if err == nil {
 		t.Error("expected error")
 	}

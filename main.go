@@ -21,6 +21,8 @@ import (
 	purchaseItemHdr "uttc-hackathon-backend/handlers/purchaseItem"
 	blockchainHdr "uttc-hackathon-backend/handlers/blockchain"
 	blockchainUc "uttc-hackathon-backend/usecase/blockchain"
+	geminiHdr "uttc-hackathon-backend/handlers/gemini"
+	geminiUc "uttc-hackathon-backend/usecase/gemini"
 	getItemUc "uttc-hackathon-backend/usecase/getItems"
 	likesUc "uttc-hackathon-backend/usecase/likes"
 	messagesUc "uttc-hackathon-backend/usecase/messages"
@@ -82,6 +84,10 @@ func main() {
 	blockchainUsecase := blockchainUc.NewBlockchainUsecase(itemDAO, purchaseDAO)
 	blockchainHandler := blockchainHdr.NewBlockchainHandler(blockchainUsecase)
 
+	// Gemini handler
+	geminiUsecase := geminiUc.NewGeminiUsecase()
+	geminiHandler := geminiHdr.NewGeminiHandler(geminiUsecase)
+
 	// HTTPルーティング
 	http.HandleFunc("/postItems", itemHandler.CreateItem)
 	http.HandleFunc("/uploadImage", itemHandler.UploadImage)
@@ -101,6 +107,8 @@ func main() {
 	// Blockchain endpoints
 	http.HandleFunc("/api/v1/blockchain/item-listed", blockchainHandler.HandleItemListed)
 	http.HandleFunc("/api/v1/blockchain/item-purchased", blockchainHandler.HandleItemPurchased)
+	// Gemini endpoint
+	http.HandleFunc("/api/v1/gemini/generate", geminiHandler.GenerateContent)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	standardRouter := http.DefaultServeMux
