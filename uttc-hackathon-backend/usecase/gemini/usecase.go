@@ -127,11 +127,6 @@ type GenerateContentResponse struct {
 }
 
 func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
-
-	log.Printf("DEBUG: Target URL is: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=...%s", uc.apiKey[len(uc.apiKey)-4:])
-
-	// ... 既存のコード
-
 	// APIキーのチェック
 	if uc.apiKey == "" {
 		return &GenerateContentResponse{
@@ -173,7 +168,8 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	}
 
 	// Gemini APIエンドポイント
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", uc.apiKey)
+	// v1betaではgemini-1.5-flashがサポートされていないため、v1を使用
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -181,7 +177,7 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-
+	req.Header.Set("X-goog-api-key", uc.apiKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
