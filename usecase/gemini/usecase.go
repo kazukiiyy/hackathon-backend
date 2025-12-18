@@ -84,25 +84,25 @@ func NewGeminiUsecase() *GeminiUsecase {
 	}
 }
 
-type GeminiRequest struct {
-	Contents         []Content      `json:"contents"`
-	SystemInstruction *SystemInstruction `json:"systemInstruction,omitempty"`
-}
-
-type SystemInstruction struct {
-	Parts []Part `json:"parts"`
+type Part struct {
+	Text string `json:"text"`
 }
 
 type Content struct {
 	Parts []Part `json:"parts"`
 }
 
-type Part struct {
-	Text string `json:"text"`
+type SystemInstruction struct {
+	Parts []Part `json:"parts"`
+}
+
+type GeminiRequest struct {
+	Contents          []Content          `json:"contents"`
+	SystemInstruction *SystemInstruction `json:"systemInstruction,omitempty"`
 }
 
 type GeminiResponse struct {
-	Candidates []Candidate `json:"candidates"`
+	Candidates []Candidate  `json:"candidates"`
 	Error      *GeminiError `json:"error,omitempty"`
 }
 
@@ -168,7 +168,6 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	}
 
 	// Gemini APIエンドポイント
-	// gemini-1.5-flash または gemini-2.0-flash-exp を試す
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", uc.apiKey)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -221,4 +220,3 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 		Response: geminiResp.Candidates[0].Content.Parts[0].Text,
 	}, nil
 }
-
