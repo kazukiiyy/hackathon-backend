@@ -14,3 +14,4 @@ MODIFY COLUMN uid VARCHAR(255) NOT NULL;
 -- 既に存在する場合はエラーになるが、無視して問題ない
 CREATE INDEX idx_items_uid ON items(uid);
 
+

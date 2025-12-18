@@ -13,3 +13,4 @@ WHERE status IS NULL;
 -- インデックスを追加（オプション、パフォーマンス向上のため）
 CREATE INDEX idx_items_status ON items(status);
 
+

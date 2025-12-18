@@ -27,3 +27,4 @@ ALTER TABLE item_images
 ADD COLUMN chain_item_id BIGINT NULL 
 AFTER item_id;
 
+

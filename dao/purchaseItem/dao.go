@@ -2,6 +2,8 @@ package purchaseItem
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -34,7 +36,7 @@ func NewPurchaseDAO(db *sql.DB) *PurchaseDAO {
 func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAddress string) error {
 	tx, err := d.db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -43,50 +45,64 @@ func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAdd
 	updateQuery := "UPDATE items SET status = 'purchased', buyer_address = ? WHERE id = ? AND status IN ('listed', 'purchased')"
 	result, err := tx.Exec(updateQuery, buyerAddress, itemID)
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "Unknown column 'buyer_address'") {
+			return fmt.Errorf("buyer_address column does not exist in items table. Please run the migration script: add_buyer_address_column_safe.sql. Original error: %w", err)
+		}
+		return fmt.Errorf("failed to update purchase status: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 
+	// 更新されなかった場合、既に完了済みか確認
 	if rowsAffected == 0 {
-		// 既に'completed'または'cancelled'の場合は更新しない（正常な状態）
-		// ただし、itemIDが存在しない場合はエラーを返す
 		var currentStatus string
-		checkQuery := "SELECT status FROM items WHERE id = ?"
-		err := tx.QueryRow(checkQuery, itemID).Scan(&currentStatus)
-		if err == sql.ErrNoRows {
-			return sql.ErrNoRows
+		if err := tx.QueryRow("SELECT status FROM items WHERE id = ?", itemID).Scan(&currentStatus); err != nil {
+			if err == sql.ErrNoRows {
+				return fmt.Errorf("item not found: itemID=%d", itemID)
+			}
+			return fmt.Errorf("failed to check current status: %w", err)
 		}
-		if err != nil {
-			return err
-		}
-		// 既に'completed'または'cancelled'の場合は正常終了
+		// 既に完了済みの場合は正常終了
 		if currentStatus == "completed" || currentStatus == "cancelled" {
 			return tx.Commit()
 		}
-		// その他の場合はエラー
-		return sql.ErrNoRows
+		return fmt.Errorf("item status is '%s', cannot update to purchased", currentStatus)
 	}
 
-	// purchasesテーブルに購入情報を挿入（buyer_addressも含む）
-	// 重複チェック: 既に同じitem_idとbuyer_addressの組み合わせが存在する場合はスキップ
-	insertQuery := `
-		INSERT INTO purchases (item_id, buyer_uid, buyer_address) 
-		SELECT ?, ?, ? 
-		WHERE NOT EXISTS (
-			SELECT 1 FROM purchases 
-			WHERE item_id = ? AND buyer_address = ?
-		)
-	`
-	_, err = tx.Exec(insertQuery, itemID, buyerUID, buyerAddress, itemID, buyerAddress)
+	// purchasesテーブルに購入情報を挿入（重複チェック付き）
+	var insertQuery string
+	if buyerAddress != "" {
+		insertQuery = `
+			INSERT INTO purchases (item_id, buyer_uid, buyer_address) 
+			SELECT ?, ?, ? 
+			WHERE NOT EXISTS (
+				SELECT 1 FROM purchases 
+				WHERE item_id = ? AND buyer_address = ?
+			)
+		`
+		_, err = tx.Exec(insertQuery, itemID, buyerUID, buyerAddress, itemID, buyerAddress)
+	} else {
+		insertQuery = `
+			INSERT INTO purchases (item_id, buyer_uid, buyer_address) 
+			SELECT ?, ?, ? 
+			WHERE NOT EXISTS (
+				SELECT 1 FROM purchases 
+				WHERE item_id = ? AND buyer_uid = ? AND (buyer_address IS NULL OR buyer_address = '')
+			)
+		`
+		_, err = tx.Exec(insertQuery, itemID, buyerUID, buyerAddress, itemID, buyerUID)
+	}
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert purchase record: %w", err)
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
 }
 
 // GetUIDByWalletAddress はウォレットアドレスからUIDを取得

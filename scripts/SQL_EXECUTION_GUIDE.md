@@ -198,3 +198,4 @@ SHOW GRANTS FOR 'your_user'@'%';
 GRANT ALTER, CREATE, INDEX ON your_database.* TO 'your_user'@'%';
 ```
 
+
