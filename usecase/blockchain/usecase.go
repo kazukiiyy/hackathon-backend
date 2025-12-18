@@ -97,17 +97,23 @@ func (uc *BlockchainUsecase) HandleItemListed(chainItemID int64, tokenID int64, 
 
 // HandleItemPurchased はonchainで商品が購入された際に呼ばれる
 func (uc *BlockchainUsecase) HandleItemPurchased(chainItemID int64, buyer string, priceWei string, tokenID int64, txHash string) error {
+	log.Printf("HandleItemPurchased called: chain_item_id=%d, buyer=%s, txHash=%s", chainItemID, buyer, txHash)
+	
 	// chain_item_idで商品を検索
 	itemID, err := uc.itemDAO.FindItemByChainItemID(chainItemID)
 	if err != nil {
 		return fmt.Errorf("item not found for chain_item_id %d: %w", chainItemID, err)
 	}
+	log.Printf("Found item_id=%d for chain_item_id=%d", itemID, chainItemID)
 
 	// buyerアドレスからUIDを取得（見つからない場合は空文字列）
 	buyerUID := ""
 	uid, err := uc.purchaseDAO.GetUIDByWalletAddress(buyer)
 	if err == nil {
 		buyerUID = uid
+		log.Printf("Found buyer UID=%s for address=%s", buyerUID, buyer)
+	} else {
+		log.Printf("Buyer UID not found for address=%s (this is OK if user not registered)", buyer)
 	}
 
 	// 購入状態を更新（buyer_addressも保存）
@@ -115,6 +121,7 @@ func (uc *BlockchainUsecase) HandleItemPurchased(chainItemID int64, buyer string
 		return fmt.Errorf("failed to update purchase status: %w", err)
 	}
 
+	log.Printf("Successfully updated purchase status: item_id=%d, chain_item_id=%d, buyer=%s", itemID, chainItemID, buyer)
 	return nil
 }
 

@@ -76,6 +76,8 @@ func (h *BlockchainHandler) HandleItemListed(w http.ResponseWriter, r *http.Requ
 
 // HandleItemPurchased はonchainサービスからItemPurchasedイベントを受け取る
 func (h *BlockchainHandler) HandleItemPurchased(w http.ResponseWriter, r *http.Request) {
+	log.Printf("HandleItemPurchased called: method=%s, path=%s", r.Method, r.URL.Path)
+	
 	if r.Method != http.MethodPost {
 		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -90,14 +92,20 @@ func (h *BlockchainHandler) HandleItemPurchased(w http.ResponseWriter, r *http.R
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		writeJSONError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	log.Printf("Received ItemPurchased event: chain_item_id=%d, buyer=%s, txHash=%s", req.ChainItemID, req.Buyer, req.TxHash)
+
 	if err := h.blockchainUC.HandleItemPurchased(req.ChainItemID, req.Buyer, req.PriceWei, req.TokenID, req.TxHash); err != nil {
-		writeJSONError(w, "Failed to process item purchased event", http.StatusInternalServerError)
+		log.Printf("Error processing ItemPurchased event: %v", err)
+		writeJSONError(w, fmt.Sprintf("Failed to process item purchased event: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("Successfully processed ItemPurchased event for chain_item_id=%d", req.ChainItemID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Item purchased event processed successfully"})
