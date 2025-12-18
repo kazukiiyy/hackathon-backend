@@ -116,33 +116,23 @@ type Candidate struct {
 	Content Content `json:"content"`
 }
 
-type GenerateContentRequest struct {
-	Prompt   string `json:"prompt"`
-	Protocol string `json:"protocol"` // 後で送るので今は空白
-}
-
 type GenerateContentResponse struct {
 	Response string `json:"response"`
 	Error    string `json:"error,omitempty"`
 }
 
 func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
-	// APIキーのチェック
 	if uc.apiKey == "" {
 		return &GenerateContentResponse{
 			Error: "GEMINI_API_KEY environment variable is not set",
 		}, fmt.Errorf("GEMINI_API_KEY environment variable is not set")
 	}
 
-	// システムプロンプトとユーザーメッセージを組み合わせる
-	// プロトコルが指定されている場合は追加
 	fullSystemPrompt := systemPrompt
 	if protocol != "" {
 		fullSystemPrompt = fmt.Sprintf("%s\n\nProtocol:\n%s", systemPrompt, protocol)
 	}
 
-	// Gemini APIリクエストを構築
-	// systemInstructionフィールドでシステムプロンプトを送る
 	geminiReq := GeminiRequest{
 		SystemInstruction: &SystemInstruction{
 			Parts: []Part{
@@ -167,8 +157,6 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Gemini APIエンドポイント
-	// v1betaではgemini-1.5-flashがサポートされていないため、v1を使用
 	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
@@ -204,11 +192,10 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	// Gemini APIのエラーレスポンスをチェック
 	if geminiResp.Error != nil {
 		return &GenerateContentResponse{
-			Error: fmt.Sprintf("Gemini API error: %s (code: %d)", geminiResp.Error.Message, geminiResp.Error.Code),
-		}, fmt.Errorf("Gemini API error: %s", geminiResp.Error.Message)
+			Error: fmt.Sprintf("gemini API error: %s (code: %d)", geminiResp.Error.Message, geminiResp.Error.Code),
+		}, fmt.Errorf("gemini API error: %s", geminiResp.Error.Message)
 	}
 
 	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {

@@ -16,7 +16,7 @@ func NewGeminiHandler(uc *gemini.GeminiUsecase) *GeminiHandler {
 
 type GenerateContentRequest struct {
 	Prompt   string `json:"prompt"`
-	Protocol string `json:"protocol"` // 後で送るので今は空白
+	Protocol string `json:"protocol"`
 }
 
 type GenerateContentResponse struct {
@@ -25,6 +25,11 @@ type GenerateContentResponse struct {
 }
 
 func (h *GeminiHandler) GenerateContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	
 	if r.Method != http.MethodPost {
 		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
