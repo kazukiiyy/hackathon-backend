@@ -85,7 +85,12 @@ func NewGeminiUsecase() *GeminiUsecase {
 }
 
 type GeminiRequest struct {
-	Contents []Content `json:"contents"`
+	Contents         []Content      `json:"contents"`
+	SystemInstruction *SystemInstruction `json:"systemInstruction,omitempty"`
+}
+
+type SystemInstruction struct {
+	Parts []Part `json:"parts"`
 }
 
 type Content struct {
@@ -136,17 +141,17 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 		fullSystemPrompt = fmt.Sprintf("%s\n\nProtocol:\n%s", systemPrompt, protocol)
 	}
 
-	// Gemini APIリクエストを構築（会話形式）
-	// 最初にシステムプロンプト、次にユーザーのメッセージ
+	// Gemini APIリクエストを構築
+	// systemInstructionフィールドでシステムプロンプトを送る
 	geminiReq := GeminiRequest{
-		Contents: []Content{
-			{
-				Parts: []Part{
-					{
-						Text: fullSystemPrompt,
-					},
+		SystemInstruction: &SystemInstruction{
+			Parts: []Part{
+				{
+					Text: fullSystemPrompt,
 				},
 			},
+		},
+		Contents: []Content{
 			{
 				Parts: []Part{
 					{
@@ -163,6 +168,7 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	}
 
 	// Gemini APIエンドポイント
+	// gemini-1.5-flash または gemini-2.0-flash-exp を試す
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", uc.apiKey)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
