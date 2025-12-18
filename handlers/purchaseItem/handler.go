@@ -3,6 +3,7 @@ package purchaseItem
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,8 +40,24 @@ func (h *PurchaseHandler) PurchaseItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// URLからitem IDを取得 (/items/{id}/purchase)
-	path := strings.TrimPrefix(r.URL.Path, "/items/")
+	path := r.URL.Path
+	if !strings.HasSuffix(path, "/purchase") {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Invalid URL format. Expected: /items/{id}/purchase"})
+		return
+	}
+
+	// /items/ を削除し、/purchase を削除
+	path = strings.TrimPrefix(path, "/items/")
 	path = strings.TrimSuffix(path, "/purchase")
+	if path == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Item ID is required"})
+		return
+	}
+
 	itemID, err := strconv.Atoi(path)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -84,6 +101,8 @@ func (h *PurchaseHandler) PurchaseItem(w http.ResponseWriter, r *http.Request) {
 
 // GET /purchases?buyer_uid=xxx
 func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[GetPurchasedItems] Request received: Method=%s, URL=%s", r.Method, r.URL.String())
+	
 	if r.Method != http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -92,7 +111,10 @@ func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Reque
 	}
 
 	buyerUID := r.URL.Query().Get("buyer_uid")
+	log.Printf("[GetPurchasedItems] buyer_uid from query: %s", buyerUID)
+	
 	if buyerUID == "" {
+		log.Printf("[GetPurchasedItems] Error: buyer_uid is empty")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ErrorResponse{Error: "buyer_uid is required"})
@@ -101,6 +123,7 @@ func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Reque
 
 	items, err := h.usecase.GetPurchasedItems(buyerUID)
 	if err != nil {
+		log.Printf("[GetPurchasedItems] Error from usecase: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to get purchased items"})
@@ -108,9 +131,13 @@ func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Reque
 	}
 
 	if items == nil {
+		log.Printf("[GetPurchasedItems] Items is nil, setting to empty array")
 		items = []*dao.PurchasedItem{}
 	}
 
+	log.Printf("[GetPurchasedItems] Returning %d items for buyer_uid=%s", len(items), buyerUID)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		log.Printf("[GetPurchasedItems] Error encoding response: %v", err)
+	}
 }
