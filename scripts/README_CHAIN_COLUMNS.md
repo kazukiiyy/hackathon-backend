@@ -87,3 +87,4 @@ WHERE TABLE_NAME = 'items'
 AND COLUMN_NAME IN ('chain_item_id', 'seller_address', 'token_id');
 ```
 
+

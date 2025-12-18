@@ -53,3 +53,4 @@ CREATE INDEX idx_items_status ON items(status);
 - 既存のレコードには`status = 'listed'`が設定されます
 - `status`カラムは`VARCHAR(50)`型で、デフォルト値は`'listed'`です
 
+
