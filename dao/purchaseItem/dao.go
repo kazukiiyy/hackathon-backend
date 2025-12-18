@@ -11,7 +11,7 @@ import (
 // PurchaseDAOInterface はモック化のためのインターフェース
 type PurchaseDAOInterface interface {
 	UpdatePurchaseStatus(itemID int, buyerUID string, buyerAddress string) error
-	GetPurchasedItems(buyerUID string) ([]*PurchasedItem, error)
+	GetPurchasedItems(buyerUID string, buyerAddress string) ([]*PurchasedItem, error)
 	GetUIDByWalletAddress(walletAddress string) (string, error)
 }
 
@@ -118,38 +118,52 @@ func (d *PurchaseDAO) GetUIDByWalletAddress(walletAddress string) (string, error
 }
 
 // 購入した商品一覧を取得
-func (d *PurchaseDAO) GetPurchasedItems(buyerUID string) ([]*PurchasedItem, error) {
-	log.Printf("[PurchaseDAO] GetPurchasedItems called with buyerUID=%s", buyerUID)
+func (d *PurchaseDAO) GetPurchasedItems(buyerUID string, buyerAddress string) ([]*PurchasedItem, error) {
+	log.Printf("[PurchaseDAO] GetPurchasedItems called with buyerUID=%s, buyerAddress=%s", buyerUID, buyerAddress)
 	
-	// まず、purchasesテーブルに該当するレコードが存在するか確認
-	var purchaseCount int
-	countQuery := "SELECT COUNT(*) FROM purchases WHERE buyer_uid = ?"
-	err := d.db.QueryRow(countQuery, buyerUID).Scan(&purchaseCount)
-	if err != nil {
-		log.Printf("[PurchaseDAO] Count query error: %v", err)
+	// buyer_uidまたはbuyer_addressのどちらかで検索
+	var query string
+	var args []interface{}
+	
+	if buyerUID != "" && buyerAddress != "" {
+		// buyer_uidとbuyer_addressの両方で検索
+		query = `
+			SELECT i.id, i.title, i.price, i.explanation, i.uid, i.category, p.purchased_at
+			FROM purchases p
+			JOIN items i ON p.item_id = i.id
+			WHERE (p.buyer_uid = ? OR p.buyer_address = ?)
+			ORDER BY p.purchased_at DESC
+		`
+		args = []interface{}{buyerUID, buyerAddress}
+		log.Printf("[PurchaseDAO] Executing query with buyerUID=%s OR buyerAddress=%s", buyerUID, buyerAddress)
+	} else if buyerUID != "" {
+		// buyer_uidのみで検索
+		query = `
+			SELECT i.id, i.title, i.price, i.explanation, i.uid, i.category, p.purchased_at
+			FROM purchases p
+			JOIN items i ON p.item_id = i.id
+			WHERE p.buyer_uid = ?
+			ORDER BY p.purchased_at DESC
+		`
+		args = []interface{}{buyerUID}
+		log.Printf("[PurchaseDAO] Executing query with buyerUID=%s only", buyerUID)
+	} else if buyerAddress != "" {
+		// buyer_addressのみで検索
+		query = `
+			SELECT i.id, i.title, i.price, i.explanation, i.uid, i.category, p.purchased_at
+			FROM purchases p
+			JOIN items i ON p.item_id = i.id
+			WHERE p.buyer_address = ?
+			ORDER BY p.purchased_at DESC
+		`
+		args = []interface{}{buyerAddress}
+		log.Printf("[PurchaseDAO] Executing query with buyerAddress=%s only", buyerAddress)
 	} else {
-		log.Printf("[PurchaseDAO] Total purchases found in purchases table: %d", purchaseCount)
+		// どちらも空の場合は空配列を返す
+		log.Printf("[PurchaseDAO] Both buyerUID and buyerAddress are empty, returning empty array")
+		return []*PurchasedItem{}, nil
 	}
-	
-	// item_idがNULLでない購入レコードの数を確認
-	var validPurchaseCount int
-	validCountQuery := "SELECT COUNT(*) FROM purchases WHERE buyer_uid = ? AND item_id IS NOT NULL"
-	err = d.db.QueryRow(validCountQuery, buyerUID).Scan(&validPurchaseCount)
-	if err != nil {
-		log.Printf("[PurchaseDAO] Valid count query error: %v", err)
-	} else {
-		log.Printf("[PurchaseDAO] Purchases with valid item_id: %d", validPurchaseCount)
-	}
-	
-	query := `
-		SELECT i.id, i.title, i.price, i.explanation, i.uid, i.category, p.purchased_at
-		FROM purchases p
-		JOIN items i ON p.item_id = i.id
-		WHERE p.buyer_uid = ?
-		ORDER BY p.purchased_at DESC
-	`
-	log.Printf("[PurchaseDAO] Executing query: %s with buyerUID=%s", query, buyerUID)
-	rows, err := d.db.Query(query, buyerUID)
+	rows, err := d.db.Query(query, args...)
 	if err != nil {
 		log.Printf("[PurchaseDAO] Query error: %v", err)
 		return nil, err

@@ -99,7 +99,7 @@ func (h *PurchaseHandler) PurchaseItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(PurchaseResponse{Message: "Purchase successful"})
 }
 
-// GET /purchases?buyer_uid=xxx
+// GET /purchases?buyer_uid=xxx&buyer_address=xxx
 func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[GetPurchasedItems] Request received: Method=%s, URL=%s", r.Method, r.URL.String())
 	
@@ -111,17 +111,18 @@ func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Reque
 	}
 
 	buyerUID := r.URL.Query().Get("buyer_uid")
-	log.Printf("[GetPurchasedItems] buyer_uid from query: %s", buyerUID)
+	buyerAddress := r.URL.Query().Get("buyer_address")
+	log.Printf("[GetPurchasedItems] buyer_uid from query: %s, buyer_address: %s", buyerUID, buyerAddress)
 	
-	if buyerUID == "" {
-		log.Printf("[GetPurchasedItems] Error: buyer_uid is empty")
+	if buyerUID == "" && buyerAddress == "" {
+		log.Printf("[GetPurchasedItems] Error: both buyer_uid and buyer_address are empty")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{Error: "buyer_uid is required"})
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "buyer_uid or buyer_address is required"})
 		return
 	}
 
-	items, err := h.usecase.GetPurchasedItems(buyerUID)
+	items, err := h.usecase.GetPurchasedItems(buyerUID, buyerAddress)
 	if err != nil {
 		log.Printf("[GetPurchasedItems] Error from usecase: %v", err)
 		w.Header().Set("Content-Type", "application/json")
@@ -135,7 +136,7 @@ func (h *PurchaseHandler) GetPurchasedItems(w http.ResponseWriter, r *http.Reque
 		items = []*dao.PurchasedItem{}
 	}
 
-	log.Printf("[GetPurchasedItems] Returning %d items for buyer_uid=%s", len(items), buyerUID)
+	log.Printf("[GetPurchasedItems] Returning %d items for buyer_uid=%s, buyer_address=%s", len(items), buyerUID, buyerAddress)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {
 		log.Printf("[GetPurchasedItems] Error encoding response: %v", err)
