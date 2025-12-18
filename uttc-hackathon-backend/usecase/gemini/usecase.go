@@ -127,12 +127,11 @@ type GenerateContentResponse struct {
 }
 
 func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
-	func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
-		// ⬇️ これを追加してデプロイしてください
-		log.Printf("DEBUG: Target URL is: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=...%s", uc.apiKey[len(uc.apiKey)-4:])
 
-		// ... 既存のコード
-	}
+	log.Printf("DEBUG: Target URL is: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=...%s", uc.apiKey[len(uc.apiKey)-4:])
+
+	// ... 既存のコード
+
 	// APIキーのチェック
 	if uc.apiKey == "" {
 		return &GenerateContentResponse{
