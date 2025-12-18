@@ -15,3 +15,5 @@ MODIFY COLUMN uid VARCHAR(255) NOT NULL;
 CREATE INDEX idx_items_uid ON items(uid);
 
 
+
+

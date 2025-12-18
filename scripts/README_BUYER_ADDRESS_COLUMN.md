@@ -9,9 +9,54 @@
 - `buyer_address` (VARCHAR(42), NULL): 購入者のウォレットアドレス
 - インデックス: `idx_buyer_address` (検索パフォーマンス向上のため)
 
+### purchasesテーブル
+- `buyer_address` (VARCHAR(42), NULL): 購入者ウォレットアドレス
+
 ## SQL実行方法
 
-### 推奨: 安全版スクリプトを使用（既存カラムをチェック）
+### 🚀 最も簡単: GCPコンソールのクエリエディタから実行（推奨）
+
+1. **Google Cloud Consoleにアクセス**
+   - https://console.cloud.google.com/ にアクセス
+   - プロジェクトを選択
+
+2. **Cloud SQLインスタンスに移動**
+   - 左側のメニューから「SQL」を選択
+   - 使用しているCloud SQLインスタンスをクリック
+
+3. **データベースを選択**
+   - 上部のタブから「データベース」を選択
+   - 使用しているデータベースをクリック
+
+4. **クエリエディタを開く**
+   - データベースの詳細ページで「クエリ」タブをクリック
+
+5. **SQLを実行**
+   - 以下のSQL文をコピー＆ペーストして実行：
+
+```sql
+-- ============================================
+-- itemsテーブルにbuyer_addressカラムを追加
+-- ============================================
+ALTER TABLE items 
+ADD COLUMN buyer_address VARCHAR(42) NULL 
+COMMENT '購入者のウォレットアドレス'
+AFTER seller_address;
+
+CREATE INDEX idx_buyer_address ON items(buyer_address);
+
+-- ============================================
+-- purchasesテーブルにbuyer_addressカラムを追加
+-- ============================================
+ALTER TABLE purchases 
+ADD COLUMN buyer_address VARCHAR(42) NULL 
+COMMENT '購入者ウォレットアドレス'
+AFTER buyer_uid;
+```
+
+**または、`add_buyer_address_simple.sql`ファイルの内容をコピー＆ペーストしてください。**
+
+### 方法1: 安全版スクリプトを使用（既存カラムをチェック）
 
 ```bash
 cd hackathon-backend/scripts
@@ -26,24 +71,14 @@ chmod +x run_sql_simple.sh
 ./run_sql_simple.sh add_buyer_address_column_safe.sql
 ```
 
-### 方法1: 通常版SQLファイルを直接実行
+### 方法2: シンプル版SQLファイルを直接実行
 
 ```bash
 cd hackathon-backend/scripts
-mysql -h <HOST> -P <PORT> -u <USER> -p<PASSWORD> <DATABASE> < add_buyer_address_column.sql
-```
-
-### 方法2: スクリプトを使用
-
-```bash
-cd hackathon-backend/scripts
-chmod +x run_sql_simple.sh
-./run_sql_simple.sh add_buyer_address_column.sql
+mysql -h <HOST> -P <PORT> -u <USER> -p<PASSWORD> <DATABASE> < add_buyer_address_simple.sql
 ```
 
 ### 方法3: Cloud SQLに直接接続
-
-Google Cloud SQLを使用している場合：
 
 ```bash
 gcloud sql connect <INSTANCE_NAME> --user=<USER> --database=<DATABASE>
@@ -62,6 +97,12 @@ AFTER seller_address;
 
 -- buyer_addressにインデックスを追加
 CREATE INDEX idx_buyer_address ON items(buyer_address);
+
+-- purchasesテーブルにbuyer_addressカラムを追加
+ALTER TABLE purchases 
+ADD COLUMN buyer_address VARCHAR(42) NULL 
+COMMENT '購入者ウォレットアドレス'
+AFTER buyer_uid;
 ```
 
 ## 注意事項
@@ -86,13 +127,13 @@ CREATE INDEX idx_buyer_address ON items(buyer_address);
 マイグレーション実行後、以下のSQLで確認できます：
 
 ```sql
--- buyer_addressカラムが存在するか確認
-DESCRIBE items;
-
--- または
+-- itemsテーブルのbuyer_addressカラムが存在するか確認
 SHOW COLUMNS FROM items LIKE 'buyer_address';
 
--- インデックスが存在するか確認
+-- purchasesテーブルのbuyer_addressカラムが存在するか確認
+SHOW COLUMNS FROM purchases LIKE 'buyer_address';
+
+-- itemsテーブルのインデックスが存在するか確認
 SHOW INDEX FROM items WHERE Key_name = 'idx_buyer_address';
 ```
 

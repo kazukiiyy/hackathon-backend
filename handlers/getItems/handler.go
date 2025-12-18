@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"uttc-hackathon-backend/usecase/getItems"
 )
 
@@ -82,7 +83,18 @@ func (h *ItemHandler) GetItemByID(w http.ResponseWriter, r *http.Request) {
 
 	// /getItems/123 からIDを抽出
 	path := r.URL.Path
-	idStr := path[len("/getItems/"):]
+	prefix := "/getItems/"
+	if !strings.HasPrefix(path, prefix) {
+		writeJSONError(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+
+	idStr := path[len(prefix):]
+	if idStr == "" {
+		writeJSONError(w, "Item ID is required", http.StatusBadRequest)
+		return
+	}
+
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		writeJSONError(w, "Invalid item ID", http.StatusBadRequest)
@@ -132,5 +144,5 @@ func (h *ItemHandler) GetLatestItems(w http.ResponseWriter, r *http.Request) {
 func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]string{"message": message})
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
 }

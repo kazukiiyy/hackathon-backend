@@ -54,3 +54,5 @@ CREATE INDEX idx_items_status ON items(status);
 - `status`カラムは`VARCHAR(50)`型で、デフォルト値は`'listed'`です
 
 
+
+

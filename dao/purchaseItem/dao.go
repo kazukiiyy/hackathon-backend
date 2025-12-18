@@ -3,6 +3,7 @@ package purchaseItem
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -118,6 +119,28 @@ func (d *PurchaseDAO) GetUIDByWalletAddress(walletAddress string) (string, error
 
 // 購入した商品一覧を取得
 func (d *PurchaseDAO) GetPurchasedItems(buyerUID string) ([]*PurchasedItem, error) {
+	log.Printf("[PurchaseDAO] GetPurchasedItems called with buyerUID=%s", buyerUID)
+	
+	// まず、purchasesテーブルに該当するレコードが存在するか確認
+	var purchaseCount int
+	countQuery := "SELECT COUNT(*) FROM purchases WHERE buyer_uid = ?"
+	err := d.db.QueryRow(countQuery, buyerUID).Scan(&purchaseCount)
+	if err != nil {
+		log.Printf("[PurchaseDAO] Count query error: %v", err)
+	} else {
+		log.Printf("[PurchaseDAO] Total purchases found in purchases table: %d", purchaseCount)
+	}
+	
+	// item_idがNULLでない購入レコードの数を確認
+	var validPurchaseCount int
+	validCountQuery := "SELECT COUNT(*) FROM purchases WHERE buyer_uid = ? AND item_id IS NOT NULL"
+	err = d.db.QueryRow(validCountQuery, buyerUID).Scan(&validPurchaseCount)
+	if err != nil {
+		log.Printf("[PurchaseDAO] Valid count query error: %v", err)
+	} else {
+		log.Printf("[PurchaseDAO] Purchases with valid item_id: %d", validPurchaseCount)
+	}
+	
 	query := `
 		SELECT i.id, i.title, i.price, i.explanation, i.uid, i.category, p.purchased_at
 		FROM purchases p
@@ -125,35 +148,53 @@ func (d *PurchaseDAO) GetPurchasedItems(buyerUID string) ([]*PurchasedItem, erro
 		WHERE p.buyer_uid = ?
 		ORDER BY p.purchased_at DESC
 	`
+	log.Printf("[PurchaseDAO] Executing query: %s with buyerUID=%s", query, buyerUID)
 	rows, err := d.db.Query(query, buyerUID)
 	if err != nil {
+		log.Printf("[PurchaseDAO] Query error: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	var items []*PurchasedItem
+	rowCount := 0
 	for rows.Next() {
 		var item PurchasedItem
-		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Category, &item.PurchasedAt)
+		var purchasedAt sql.NullTime
+		err := rows.Scan(&item.ID, &item.Title, &item.Price, &item.Explanation, &item.UID, &item.Category, &purchasedAt)
 		if err != nil {
+			log.Printf("[PurchaseDAO] Scan error: %v", err)
 			return nil, err
 		}
+		if purchasedAt.Valid {
+			item.PurchasedAt = purchasedAt.Time
+		} else {
+			item.PurchasedAt = time.Now() // デフォルト値
+		}
 		items = append(items, &item)
+		rowCount++
+		log.Printf("[PurchaseDAO] Scanned item: ID=%d, Title=%s", item.ID, item.Title)
 	}
 
 	if err := rows.Err(); err != nil {
+		log.Printf("[PurchaseDAO] Rows error: %v", err)
 		return nil, err
 	}
+
+	log.Printf("[PurchaseDAO] Found %d purchased items after JOIN", rowCount)
 
 	// 各アイテムの画像URLを取得
 	for _, item := range items {
 		urls, err := d.getImageURLsForItem(item.ID)
 		if err != nil {
+			log.Printf("[PurchaseDAO] Error getting image URLs for item %d: %v", item.ID, err)
 			return nil, err
 		}
 		item.ImageURLs = urls
+		log.Printf("[PurchaseDAO] Item %d (%s) has %d images", item.ID, item.Title, len(urls))
 	}
 
+	log.Printf("[PurchaseDAO] Returning %d items", len(items))
 	return items, nil
 }
 
