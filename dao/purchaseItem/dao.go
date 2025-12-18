@@ -3,7 +3,6 @@ package purchaseItem
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
