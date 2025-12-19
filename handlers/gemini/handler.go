@@ -7,10 +7,10 @@ import (
 )
 
 type GeminiHandler struct {
-	geminiUC *gemini.GeminiUsecase
+	geminiUC *gemini.ChatUsecase
 }
 
-func NewGeminiHandler(uc *gemini.GeminiUsecase) *GeminiHandler {
+func NewGeminiHandler(uc *gemini.ChatUsecase) *GeminiHandler {
 	return &GeminiHandler{geminiUC: uc}
 }
 
