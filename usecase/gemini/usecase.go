@@ -70,55 +70,49 @@ Web3ウォレットを使用して安全に売買を行う中心的な機能で�
 
 これがアプリの機能です。web3がわからない初心者にも簡潔かつ丁寧に教えなさい。`
 
-type GeminiUsecase struct {
+type ChatUsecase struct {
 	apiKey string
 }
 
-func NewGeminiUsecase() *GeminiUsecase {
-	apiKey := os.Getenv("GEMINI_API_KEY")
+func NewGeminiUsecase() *ChatUsecase {
+	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		log.Println("WARNING: GEMINI_API_KEY environment variable is not set")
+		log.Println("WARNING: OPENAI_API_KEY environment variable is not set")
 	}
-	return &GeminiUsecase{
+	return &ChatUsecase{
 		apiKey: apiKey,
 	}
 }
 
-type Part struct {
-	Text string `json:"text"`
+// OpenAI API用の構造体
+type OpenAIMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
-type Content struct {
-	Parts []Part `json:"parts"`
+type OpenAIRequest struct {
+	Model    string          `json:"model"`
+	Messages []OpenAIMessage `json:"messages"`
 }
 
-type SystemInstruction struct {
-	Parts []Part `json:"parts"`
+type OpenAIResponse struct {
+	Choices []OpenAIChoice `json:"choices"`
+	Error   *OpenAIError   `json:"error,omitempty"`
 }
 
-type GeminiRequest struct {
-	Contents          []Content          `json:"contents"`
-	SystemInstruction *SystemInstruction `json:"systemInstruction,omitempty"`
+type OpenAIChoice struct {
+	Message OpenAIMessage `json:"message"`
 }
 
-type GeminiResponse struct {
-	Candidates []Candidate  `json:"candidates"`
-	Error      *GeminiError `json:"error,omitempty"`
-}
-
-type GeminiError struct {
-	Code    int    `json:"code"`
+type OpenAIError struct {
 	Message string `json:"message"`
-	Status  string `json:"status"`
-}
-
-type Candidate struct {
-	Content Content `json:"content"`
+	Type    string `json:"type"`
+	Code    string `json:"code"`
 }
 
 type GenerateContentRequest struct {
 	Prompt   string `json:"prompt"`
-	Protocol string `json:"protocol"` // 後で送るので今は空白
+	Protocol string `json:"protocol"`
 }
 
 type GenerateContentResponse struct {
@@ -126,49 +120,38 @@ type GenerateContentResponse struct {
 	Error    string `json:"error,omitempty"`
 }
 
-func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
-	// APIキーのチェック
+func (uc *ChatUsecase) GenerateContent(userMessage string, protocol string) (*GenerateContentResponse, error) {
 	if uc.apiKey == "" {
 		return &GenerateContentResponse{
-			Error: "GEMINI_API_KEY environment variable is not set",
-		}, fmt.Errorf("GEMINI_API_KEY environment variable is not set")
+			Error: "OPENAI_API_KEY environment variable is not set",
+		}, fmt.Errorf("OPENAI_API_KEY environment variable is not set")
 	}
 
-	// システムプロンプトとユーザーメッセージを組み合わせる
-	// プロトコルが指定されている場合は追加
 	fullSystemPrompt := systemPrompt
 	if protocol != "" {
 		fullSystemPrompt = fmt.Sprintf("%s\n\nProtocol:\n%s", systemPrompt, protocol)
 	}
 
-	// Gemini APIリクエストを構築
-	// systemInstructionフィールドでシステムプロンプトを送る
-	geminiReq := GeminiRequest{
-		SystemInstruction: &SystemInstruction{
-			Parts: []Part{
-				{
-					Text: fullSystemPrompt,
-				},
-			},
-		},
-		Contents: []Content{
+	openaiReq := OpenAIRequest{
+		Model: "gpt-4o-mini",
+		Messages: []OpenAIMessage{
 			{
-				Parts: []Part{
-					{
-						Text: userMessage,
-					},
-				},
+				Role:    "system",
+				Content: fullSystemPrompt,
+			},
+			{
+				Role:    "user",
+				Content: userMessage,
 			},
 		},
 	}
 
-	jsonData, err := json.Marshal(geminiReq)
+	jsonData, err := json.Marshal(openaiReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Gemini APIエンドポイント
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+	url := "https://api.openai.com/v1/chat/completions"
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -176,48 +159,47 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-goog-api-key", uc.apiKey)
+	req.Header.Set("Authorization", "Bearer "+uc.apiKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Gemini API request error: %v", err)
+		log.Printf("OpenAI API request error: %v", err)
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Gemini API response read error: %v", err)
+		log.Printf("OpenAI API response read error: %v", err)
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Gemini API error: status=%d, body=%s", resp.StatusCode, string(body))
+		log.Printf("OpenAI API error: status=%d, body=%s", resp.StatusCode, string(body))
 		return &GenerateContentResponse{
 			Error: fmt.Sprintf("API error: status=%d, body=%s", resp.StatusCode, string(body)),
 		}, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var geminiResp GeminiResponse
-	if err := json.Unmarshal(body, &geminiResp); err != nil {
+	var openaiResp OpenAIResponse
+	if err := json.Unmarshal(body, &openaiResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	// Gemini APIのエラーレスポンスをチェック
-	if geminiResp.Error != nil {
+	if openaiResp.Error != nil {
 		return &GenerateContentResponse{
-			Error: fmt.Sprintf("Gemini API error: %s (code: %d)", geminiResp.Error.Message, geminiResp.Error.Code),
-		}, fmt.Errorf("Gemini API error: %s", geminiResp.Error.Message)
+			Error: fmt.Sprintf("OpenAI API error: %s", openaiResp.Error.Message),
+		}, fmt.Errorf("OpenAI API error: %s", openaiResp.Error.Message)
 	}
 
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+	if len(openaiResp.Choices) == 0 {
 		return &GenerateContentResponse{
-			Error: "No response from Gemini API",
-		}, fmt.Errorf("no candidates in response")
+			Error: "No response from OpenAI API",
+		}, fmt.Errorf("no choices in response")
 	}
 
 	return &GenerateContentResponse{
-		Response: geminiResp.Candidates[0].Content.Parts[0].Text,
+		Response: openaiResp.Choices[0].Message.Content,
 	}, nil
 }
