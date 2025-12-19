@@ -111,6 +111,43 @@ func (h *BlockchainHandler) HandleItemPurchased(w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(map[string]string{"message": "Item purchased event processed successfully"})
 }
 
+// HandleReceiptConfirmed はonchainサービスからReceiptConfirmedイベントを受け取る
+func (h *BlockchainHandler) HandleReceiptConfirmed(w http.ResponseWriter, r *http.Request) {
+	log.Printf("HandleReceiptConfirmed called: method=%s, path=%s", r.Method, r.URL.Path)
+
+	if r.Method != http.MethodPost {
+		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		ChainItemID int64  `json:"chain_item_id"`
+		Buyer       string `json:"buyer"`
+		Seller      string `json:"seller"`
+		PriceWei    string `json:"price_wei"`
+		TxHash      string `json:"tx_hash"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		writeJSONError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received ReceiptConfirmed event: chain_item_id=%d, buyer=%s, seller=%s, txHash=%s", req.ChainItemID, req.Buyer, req.Seller, req.TxHash)
+
+	if err := h.blockchainUC.HandleReceiptConfirmed(req.ChainItemID, req.Buyer, req.Seller, req.PriceWei, req.TxHash); err != nil {
+		log.Printf("Error processing ReceiptConfirmed event: %v", err)
+		writeJSONError(w, fmt.Sprintf("Failed to process receipt confirmed event: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Successfully processed ReceiptConfirmed event for chain_item_id=%d", req.ChainItemID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Receipt confirmed event processed successfully"})
+}
+
 func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

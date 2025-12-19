@@ -98,7 +98,7 @@ func (uc *BlockchainUsecase) HandleItemListed(chainItemID int64, tokenID int64, 
 // HandleItemPurchased はonchainで商品が購入された際に呼ばれる
 func (uc *BlockchainUsecase) HandleItemPurchased(chainItemID int64, buyer string, priceWei string, tokenID int64, txHash string) error {
 	log.Printf("HandleItemPurchased called: chain_item_id=%d, buyer=%s, txHash=%s", chainItemID, buyer, txHash)
-	
+
 	// chain_item_idで商品を検索
 	itemID, err := uc.itemDAO.FindItemByChainItemID(chainItemID)
 	if err != nil {
@@ -122,6 +122,19 @@ func (uc *BlockchainUsecase) HandleItemPurchased(chainItemID int64, buyer string
 	}
 
 	log.Printf("Successfully updated purchase status: item_id=%d, chain_item_id=%d, buyer=%s", itemID, chainItemID, buyer)
+	return nil
+}
+
+// HandleReceiptConfirmed はonchainで商品受け取り確認された際に呼ばれる
+func (uc *BlockchainUsecase) HandleReceiptConfirmed(chainItemID int64, buyer string, seller string, priceWei string, txHash string) error {
+	log.Printf("HandleReceiptConfirmed called: chain_item_id=%d, buyer=%s, seller=%s, txHash=%s", chainItemID, buyer, seller, txHash)
+
+	// ステータスをcompletedに更新
+	if err := uc.purchaseDAO.UpdateToCompleted(chainItemID); err != nil {
+		return fmt.Errorf("failed to update status to completed: %w", err)
+	}
+
+	log.Printf("Successfully updated status to completed: chain_item_id=%d", chainItemID)
 	return nil
 }
 

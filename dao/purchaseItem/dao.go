@@ -212,6 +212,28 @@ func (d *PurchaseDAO) GetPurchasedItems(buyerUID string, buyerAddress string) ([
 	return items, nil
 }
 
+// UpdateToCompleted は商品受け取り確認時にステータスをcompletedに更新
+func (d *PurchaseDAO) UpdateToCompleted(chainItemID int64) error {
+	query := `UPDATE items SET status = 'completed' WHERE chain_item_id = ? AND status = 'purchased'`
+	result, err := d.db.Exec(query, chainItemID)
+	if err != nil {
+		return fmt.Errorf("failed to update status to completed: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		log.Printf("No rows updated for chain_item_id=%d (may already be completed)", chainItemID)
+	} else {
+		log.Printf("Updated status to completed for chain_item_id=%d", chainItemID)
+	}
+
+	return nil
+}
+
 func (d *PurchaseDAO) getImageURLsForItem(itemID int) ([]string, error) {
 	query := "SELECT image_url FROM item_images WHERE item_id = ? ORDER BY id"
 	rows, err := d.db.Query(query, itemID)
