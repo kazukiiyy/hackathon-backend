@@ -157,7 +157,7 @@ func (uc *GeminiUsecase) GenerateContent(userMessage string, protocol string) (*
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
