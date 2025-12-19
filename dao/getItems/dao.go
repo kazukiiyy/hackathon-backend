@@ -65,7 +65,8 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 		var priceStr string
 		var explanation sql.NullString
 		var category sql.NullString
-		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &item.Status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
+		var status sql.NullString
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item row: %w", err)
 		}
@@ -82,6 +83,13 @@ func (d *ItemDAO) GetItemsByCategory(category string, page, limit int) ([]*Item,
 			item.Category = category.String
 		} else {
 			item.Category = ""
+		}
+		
+		// statusの処理
+		if status.Valid {
+			item.Status = status.String
+		} else {
+			item.Status = "listed" // デフォルト値
 		}
 		
 		// priceを文字列からintに変換
@@ -269,7 +277,8 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 		var priceStr string
 		var explanation sql.NullString
 		var category sql.NullString
-		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &item.Status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
+		var status sql.NullString
+		err := rows.Scan(&item.ID, &item.Title, &priceStr, &explanation, &item.UID, &status, &category, &item.LikeCount, &item.CreatedAt, &chainItemID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item row: %w", err)
 		}
@@ -286,6 +295,13 @@ func (d *ItemDAO) GetItemsByUid(uid string) ([]*Item, error) {
 			item.Category = category.String
 		} else {
 			item.Category = ""
+		}
+		
+		// statusの処理
+		if status.Valid {
+			item.Status = status.String
+		} else {
+			item.Status = "listed" // デフォルト値
 		}
 		
 		// priceを文字列からintに変換
