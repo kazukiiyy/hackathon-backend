@@ -234,6 +234,28 @@ func (d *PurchaseDAO) UpdateToCompleted(chainItemID int64) error {
 	return nil
 }
 
+// UpdateToCancelled は商品キャンセル時にステータスをcancelledに更新
+func (d *PurchaseDAO) UpdateToCancelled(chainItemID int64) error {
+	query := `UPDATE items SET status = 'cancelled' WHERE chain_item_id = ? AND status = 'listed'`
+	result, err := d.db.Exec(query, chainItemID)
+	if err != nil {
+		return fmt.Errorf("failed to update status to cancelled: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		log.Printf("No rows updated for chain_item_id=%d (may already be cancelled or purchased)", chainItemID)
+	} else {
+		log.Printf("Updated status to cancelled for chain_item_id=%d", chainItemID)
+	}
+
+	return nil
+}
+
 func (d *PurchaseDAO) getImageURLsForItem(itemID int) ([]string, error) {
 	query := "SELECT image_url FROM item_images WHERE item_id = ? ORDER BY id"
 	rows, err := d.db.Query(query, itemID)

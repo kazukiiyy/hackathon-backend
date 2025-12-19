@@ -148,6 +148,41 @@ func (h *BlockchainHandler) HandleReceiptConfirmed(w http.ResponseWriter, r *htt
 	json.NewEncoder(w).Encode(map[string]string{"message": "Receipt confirmed event processed successfully"})
 }
 
+// HandleItemCancelled はonchainサービスからItemCancelledイベントを受け取る
+func (h *BlockchainHandler) HandleItemCancelled(w http.ResponseWriter, r *http.Request) {
+	log.Printf("HandleItemCancelled called: method=%s, path=%s", r.Method, r.URL.Path)
+
+	if r.Method != http.MethodPost {
+		writeJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		ChainItemID int64  `json:"chain_item_id"`
+		Seller      string `json:"seller"`
+		TxHash      string `json:"tx_hash"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		writeJSONError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received ItemCancelled event: chain_item_id=%d, seller=%s, txHash=%s", req.ChainItemID, req.Seller, req.TxHash)
+
+	if err := h.blockchainUC.HandleItemCancelled(req.ChainItemID, req.Seller, req.TxHash); err != nil {
+		log.Printf("Error processing ItemCancelled event: %v", err)
+		writeJSONError(w, fmt.Sprintf("Failed to process item cancelled event: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Successfully processed ItemCancelled event for chain_item_id=%d", req.ChainItemID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Item cancelled event processed successfully"})
+}
+
 func writeJSONError(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

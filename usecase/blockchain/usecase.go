@@ -138,3 +138,16 @@ func (uc *BlockchainUsecase) HandleReceiptConfirmed(chainItemID int64, buyer str
 	return nil
 }
 
+// HandleItemCancelled はonchainで商品がキャンセルされた際に呼ばれる
+func (uc *BlockchainUsecase) HandleItemCancelled(chainItemID int64, seller string, txHash string) error {
+	log.Printf("HandleItemCancelled called: chain_item_id=%d, seller=%s, txHash=%s", chainItemID, seller, txHash)
+
+	// ステータスをcancelledに更新
+	if err := uc.purchaseDAO.UpdateToCancelled(chainItemID); err != nil {
+		return fmt.Errorf("failed to update status to cancelled: %w", err)
+	}
+
+	log.Printf("Successfully updated status to cancelled: chain_item_id=%d", chainItemID)
+	return nil
+}
+

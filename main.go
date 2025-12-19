@@ -108,6 +108,7 @@ func main() {
 	http.HandleFunc("/api/v1/blockchain/item-listed", blockchainHandler.HandleItemListed)
 	http.HandleFunc("/api/v1/blockchain/item-purchased", blockchainHandler.HandleItemPurchased)
 	http.HandleFunc("/api/v1/blockchain/receipt-confirmed", blockchainHandler.HandleReceiptConfirmed)
+	http.HandleFunc("/api/v1/blockchain/item-cancelled", blockchainHandler.HandleItemCancelled)
 	// Gemini endpoint
 	http.HandleFunc("/api/v1/gemini/generate", geminiHandler.GenerateContent)
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
