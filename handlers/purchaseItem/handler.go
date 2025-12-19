@@ -84,9 +84,13 @@ func (h *PurchaseHandler) PurchaseItem(w http.ResponseWriter, r *http.Request) {
 	err = h.usecase.PurchaseItem(itemID, req.BuyerUID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
+		errMsg := err.Error()
 		if err == sql.ErrNoRows {
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(ErrorResponse{Error: "Item not found or already purchased"})
+		} else if strings.Contains(errMsg, "seller cannot purchase their own item") {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Seller cannot purchase their own item"})
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(ErrorResponse{Error: "Failed to purchase item"})

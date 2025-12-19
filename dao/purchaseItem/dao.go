@@ -41,6 +41,21 @@ func (d *PurchaseDAO) UpdatePurchaseStatus(itemID int, buyerUID string, buyerAdd
 	}
 	defer tx.Rollback()
 
+	// 商品の出品者UIDを取得して、購入者UIDと比較
+	var sellerUID string
+	err = tx.QueryRow("SELECT uid FROM items WHERE id = ?", itemID).Scan(&sellerUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("item not found: itemID=%d", itemID)
+		}
+		return fmt.Errorf("failed to get seller uid: %w", err)
+	}
+
+	// 出品者が自分の商品を購入できないようにする
+	if sellerUID == buyerUID {
+		return fmt.Errorf("seller cannot purchase their own item")
+	}
+
 	// itemsテーブルのstatusとbuyer_addressを更新
 	// statusが'listed'または'purchased'の場合に更新（重複イベントに対応）
 	updateQuery := "UPDATE items SET status = 'purchased', buyer_address = ? WHERE id = ? AND status IN ('listed', 'purchased')"

@@ -49,6 +49,14 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 自分自身とのメッセージを取得できないようにする
+	if myUID == partnerUID {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "my_uid and partner_uid must be different"})
+		return
+	}
+
 	messages, err := h.usecase.GetMessages(myUID, partnerUID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -86,6 +94,14 @@ func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ErrorResponse{Error: "sender_uid, receiver_uid, and content are required"})
+		return
+	}
+
+	// 自分自身にメッセージを送信できないようにする
+	if req.SenderUID == req.ReceiverUID {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{Error: "Cannot send message to yourself"})
 		return
 	}
 
